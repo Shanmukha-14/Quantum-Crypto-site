@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Cybersecurity Command Center</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-bg: #0a0a0b;
+            --secondary-bg: #161618;
+            --accent-bg: #1a1a1d;
+            --primary-text: #ffffff;
+            --secondary-text: #a0a0a5;
+            --accent-color: #00d4ff;
+            --success-color: #00ff88;
+            --warning-color: #ffb800;
+            --danger-color: #ff4757;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-quantum: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+            --gradient-danger: linear-gradient(135deg, #ff4757 0%, #ff6b7d 100%);
+            --border-color: #2a2a2d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            overflow-x: hidden;
+            font-size: 14px;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            33% { transform: translateX(-20px) translateY(-10px); }
+            66% { transform: translateX(20px) translateY(10px); }
+        }
+
+        /* Navigation Header */
+        .nav-header {
+            background: linear-gradient(135deg, rgba(22, 22, 24, 0.9) 0%, rgba(26, 26, 29, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-quantum);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success-color);
+            border-radius: 25px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 1fr;
+            height: 100vh;
+            gap: 15px;
+            padding: 100px 15px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .main-container.fullscreen-map {
+            grid-template-columns: 60px 1fr 60px;
+        }
+
+        .main-container.expanded-map {
+            grid-template-columns: 200px 1fr 200px;
+        }
+
+        .main-container.map-only {
+            grid-template-columns: 1fr;
+            padding: 100px 10px 10px;
+        }
+
+        /* Sidebar */
+        /* Sidebar */
+        .sidebar {
+            background: var(--secondary-bg);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            min-height: calc(100vh - 130px);
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-260px);
+            opacity: 0.1;
+        }
+
+        .sidebar.hidden {
+            display: none;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: var(--gradient-quantum);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
+
+        /* Map Container */
+        /* Map Container */
+        .map-container {
+            background: var(--secondary-bg);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            min-height: calc(100vh - 130px);
+            width: 100%;
+        }
+
+        .map-container.full-width {
+            grid-column: 1 / -1;
+            margin: 0 280px;
+        }
+
+        #satellite-map {
+            width: 100%;
+            height: 100%;
+            min-height: calc(100vh - 130px);
+            border-radius: 15px;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(22, 22, 24, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .map-control-btn {
+            padding: 10px;
+            background: rgba(22, 22, 24, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--primary-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .map-control-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        .map-control-btn.active {
+            background: var(--gradient-quantum);
+        }
+
+        .map-zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(22, 22, 24, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--primary-text);
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .zoom-btn:hover {
+            background: var(--gradient-quantum);
+            transform: scale(1.1);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            max-height: calc(100vh - 130px);
+            transition: all 0.3s ease;
+        }
+
+        .control-panel.collapsed {
+            transform: translateX(300px);
+            opacity: 0.1;
+        }
+
+        .control-panel.hidden {
+            display: none;
+        }
+
+        .panel-card {
+            background: var(--secondary-bg);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-quantum);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .metric-item:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-top: 5px;
+        }
+
+        /* Quantum Visualization */
+        .quantum-viz {
+            height: 200px;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .quantum-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: quantumFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes quantumFloat {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1);
+                opacity: 0.8;
+            }
+            50% { 
+                transform: translate(20px, -15px) scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        /* Security Events */
+        .event-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            border-left: 3px solid var(--success-color);
+        }
+
+        .event-item.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .event-item.danger {
+            border-left-color: var(--danger-color);
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-right: 10px;
+            min-width: 50px;
+        }
+
+        .event-text {
+            font-size: 12px;
+            flex: 1;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-top: 2px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            background: var(--gradient-quantum);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: var(--secondary-text);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--primary-text);
+            font-size: 12px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        /* GPS Track */
+        .gps-track {
+            stroke: var(--accent-color);
+            stroke-width: 3;
+            fill: none;
+            filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.6));
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 220px 1fr 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 100px 5px 5px;
+            }
+            
+            .sidebar, .control-panel {
+                display: none;
+            }
+
+            .map-container {
+                min-height: calc(100vh - 110px);
+            }
+
+            #satellite-map {
+                min-height: calc(100vh - 110px);
+            }
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 300px;
+            z-index: 10000;
+            transform: translateX(350px);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <!-- Navigation Header -->
+    <div class="nav-header">
+        <div class="nav-title">Quantum Cybersecurity Command Center</div>
+        <div class="nav-controls">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>System Operational</span>
+            </div>
+            <button class="btn btn-sm" onclick="toggleFullscreen()">Fullscreen</button>
+            <button class="btn btn-sm" onclick="toggleMapView()">Big Map</button>
+            <button class="btn btn-sm btn-danger" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Navigation</div>
+                <div class="nav-item active" onclick="switchView('overview')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                    </svg>
+                    Overview
+                </div>
+                <div class="nav-item" onclick="switchView('gps')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    GPS Tracking
+                </div>
+                <div class="nav-item" onclick="switchView('quantum')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Quantum Tokens
+                </div>
+                <div class="nav-item" onclick="switchView('security')">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+                    </svg>
+                    Security
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Quick Actions</div>
+                <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="generateQuantumToken()">
+                    Generate Token
+                </button>
+                <button class="btn" style="width: 100%; margin-bottom: 10px;" onclick="refreshData()">
+                    Refresh Data
+                </button>
+                <button class="btn btn-danger" style="width: 100%;" onclick="emergencyLockdown()">
+                    Emergency Lock
+                </button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">System Health</div>
+                <div class="metric-item">
+                    <div class="metric-value" id="uptime">99.8%</div>
+                    <div class="metric-label">Uptime</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="threats">0</div>
+                    <div class="metric-label">Active Threats</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="satellite-map"></div>
+            <div class="map-overlay">
+                <div style="font-weight: 600; margin-bottom: 5px;">Live GPS Tracking</div>
+                <div style="font-size: 12px; color: var(--secondary-text);">
+                    Active Vehicles: <span id="active-vehicles">0</span>
+                </div>
+            </div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="map-control-btn" onclick="toggleMapLayer('satellite')" title="Satellite View">
+                    🛰️ Satellite
+                </button>
+                <button class="map-control-btn" onclick="toggleMapLayer('street')" title="Street View">
+                    🗺️ Street
+                </button>
+                <button class="map-control-btn" onclick="toggleMapLayer('hybrid')" title="Hybrid View">
+                    🌍 Hybrid
+                </button>
+                <button class="map-control-btn" onclick="centerOnVehicles()" title="Center on Vehicles">
+                    🎯 Center
+                </button>
+                <button class="map-control-btn" onclick="toggleHeatmap()" title="Toggle Heatmap">
+                    🔥 Heat
+                </button>
+            </div>
+            
+            <!-- Zoom Controls -->
+            <div class="map-zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                <button class="zoom-btn" onclick="resetZoom()" title="Reset View">⌂</button>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <!-- System Metrics -->
+            <div class="panel-card">
+                <div class="card-title">
+                    System Metrics
+                    <span class="loading" id="metrics-loading" style="display: none;"></span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-sessions">0</div>
+                        <div class="metric-label">Active Sessions</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-tokens">0</div>
+                        <div class="metric-label">Quantum Tokens</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-gps">0</div>
+                        <div class="metric-label">GPS Records</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-events">0</div>
+                        <div class="metric-label">Security Events</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantum Visualization -->
+            <div class="panel-card">
+                <div class="card-title">Quantum State</div>
+                <div class="quantum-viz" id="quantum-viz">
+                    <!-- Particles will be generated here -->
+                </div>
+            </div>
+
+            <!-- Security Events -->
+            <div class="panel-card" style="flex: 1;">
+                <div class="card-title">
+                    Security Events
+                    <button class="btn btn-sm" onclick="clearSecurityEvents()">Clear</button>
+                </div>
+                <div class="event-list" id="security-events">
+                    <!-- Events will be populated here -->
+                </div>
+            </div>
+
+            <!-- Vehicle Control -->
+            <div class="panel-card">
+                <div class="card-title">Vehicle Control</div>
+                <div class="form-group">
+                    <label class="form-label">Vehicle ID</label>
+                    <input type="text" class="form-input" id="vehicle-id" placeholder="Enter vehicle ID">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Action</label>
+                    <select class="form-input" id="vehicle-action">
+                        <option value="track">Track Location</option>
+                        <option value="lock">Emergency Lock</option>
+                        <option value="unlock">Unlock</option>
+                    </select>
+                </div>
+                <button class="btn" style="width: 100%;" onclick="executeVehicleAction()">
+                    Execute Action
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // Global Variables
+        let map;
+        let satelliteLayer;
+        let streetLayer;
+        let hybridLayer;
+        let currentMapLayer = 'satellite';
+        let heatmapVisible = false;
+        let mapExpanded = false;
+        let vehicleMarkers = new Map();
+        let quantumTokens = new Map();
+        let securityEvents = [];
+        let currentView = 'overview';
+        let authToken = localStorage.getItem('auth_token');
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!authToken) {
+                showLogin();
+                return;
+            }
+            
+            initializeMap();
+            initializeQuantumVisualization();
+            startDataUpdates();
+            loadInitialData();
+        });
+
+        // Map Initialization
+        function initializeMap() {
+            map = L.map('satellite-map', {
+                zoomControl: false  // Disable default zoom controls
+            }).setView([40.7128, -74.0060], 10);
+            
+            // Satellite Layer (default)
+            satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Quantum Cybersecurity System',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Street Layer
+            streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Quantum Cybersecurity System',
+                maxZoom: 18
+            });
+
+            // Hybrid Layer (satellite + labels)
+            hybridLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Quantum Cybersecurity System',
+                maxZoom: 18,
+                opacity: 0.5
+            });
+
+            // Dark theme overlay for better contrast
+            const darkOverlay = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+                opacity: 0.3,
+                maxZoom: 18
+            }).addTo(map);
+
+            // Add custom event handlers
+            map.on('click', function(e) {
+                addCustomMarker(e.latlng);
+            });
+
+            map.on('zoomend', function() {
+                updateMapOverlay();
+            });
+
+            map.on('moveend', function() {
+                updateMapOverlay();
+            });
+        }
+
+        // Map Control Functions
+        function toggleMapView() {
+            const container = document.querySelector('.main-container');
+            const sidebar = document.querySelector('.sidebar');
+            const controlPanel = document.querySelector('.control-panel');
+            const mapContainer = document.querySelector('.map-container');
+            const button = document.querySelector('[onclick="toggleMapView()"]');
+            
+            if (!mapExpanded) {
+                // Big Map Mode - Hide sidebars completely
+                container.classList.add('map-only');
+                sidebar.classList.add('hidden');
+                controlPanel.classList.add('hidden');
+                mapContainer.classList.add('full-width');
+                mapExpanded = true;
+                showToast('Big Map Mode - Maximum visibility', 'success');
+                button.textContent = 'Normal View';
+            } else {
+                // Return to normal view
+                container.classList.remove('map-only');
+                sidebar.classList.remove('hidden');
+                controlPanel.classList.remove('hidden');
+                mapContainer.classList.remove('full-width');
+                mapExpanded = false;
+                showToast('Normal view restored', 'success');
+                button.textContent = 'Big Map';
+            }
+            
+            // Force map to resize after layout change
+            setTimeout(() => {
+                map.invalidateSize();
+                // Center on vehicles if available
+                if (vehicleMarkers.size > 0) {
+                    centerOnVehicles();
+                }
+            }, 400);
+        }
+
+        function toggleMapLayer(layerType) {
+            // Remove all layers first
+            map.removeLayer(satelliteLayer);
+            map.removeLayer(streetLayer);
+            if (map.hasLayer(hybridLayer)) {
+                map.removeLayer(hybridLayer);
+            }
+            
+            // Update active button
+            document.querySelectorAll('.map-control-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add selected layer
+            switch(layerType) {
+                case 'satellite':
+                    map.addLayer(satelliteLayer);
+                    currentMapLayer = 'satellite';
+                    break;
+                case 'street':
+                    map.addLayer(streetLayer);
+                    currentMapLayer = 'street';
+                    break;
+                case 'hybrid':
+                    map.addLayer(satelliteLayer);
+                    map.addLayer(hybridLayer);
+                    currentMapLayer = 'hybrid';
+                    break;
+            }
+            
+            // Update active button
+            event.target.classList.add('active');
+            showToast(`${layerType} view activated`, 'success');
+        }
+
+        function centerOnVehicles() {
+            if (vehicleMarkers.size > 0) {
+                const group = new L.featureGroup(Array.from(vehicleMarkers.values()));
+                map.fitBounds(group.getBounds().pad(0.1));
+                showToast(`Centered on ${vehicleMarkers.size} vehicles`, 'success');
+            } else {
+                // Center on default location if no vehicles
+                map.setView([40.7128, -74.0060], 10);
+                showToast('No vehicles to center on', 'error');
+            }
+        }
+
+        function toggleHeatmap() {
+            heatmapVisible = !heatmapVisible;
+            
+            if (heatmapVisible) {
+                // Create heatmap effect around vehicles
+                vehicleMarkers.forEach((marker, vehicleId) => {
+                    const pos = marker.getLatLng();
+                    L.circle(pos, {
+                        radius: 200,
+                        color: '#ff4757',
+                        fillColor: '#ff4757',
+                        fillOpacity: 0.3,
+                        opacity: 0.6,
+                        className: 'heatmap-circle'
+                    }).addTo(map);
+                });
+                
+                event.target.classList.add('active');
+                showToast('Heatmap enabled', 'success');
+            } else {
+                // Remove heatmap circles
+                map.eachLayer(function(layer) {
+                    if (layer.options && layer.options.className === 'heatmap-circle') {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                event.target.classList.remove('active');
+                showToast('Heatmap disabled', 'success');
+            }
+        }
+
+        function zoomIn() {
+            map.zoomIn();
+            showToast('Zooming in...', 'success');
+        }
+
+        function zoomOut() {
+            map.zoomOut();
+            showToast('Zooming out...', 'success');
+        }
+
+        function resetZoom() {
+            map.setView([40.7128, -74.0060], 10);
+            showToast('View reset to default', 'success');
+        }
+
+        function updateMapOverlay() {
+            const zoom = map.getZoom();
+            const center = map.getCenter();
+            const overlay = document.querySelector('.map-overlay');
+            
+            if (overlay) {
+                const coordsText = `Lat: ${center.lat.toFixed(4)}, Lng: ${center.lng.toFixed(4)}, Zoom: ${zoom}`;
+                overlay.innerHTML = `
+                    <div style="font-weight: 600; margin-bottom: 5px;">Live GPS Tracking</div>
+                    <div style="font-size: 12px; color: var(--secondary-text);">
+                        Active Vehicles: <span id="active-vehicles">${vehicleMarkers.size}</span>
+                    </div>
+                    <div style="font-size: 10px; color: var(--secondary-text); margin-top: 5px;">
+                        ${coordsText}
+                    </div>
+                `;
+            }
+        }
+
+        // Add custom markers with quantum effects
+        function addCustomMarker(latlng, data = {}) {
+            const customIcon = L.divIcon({
+                html: `
+                    <div style="
+                        width: 20px; 
+                        height: 20px; 
+                        background: radial-gradient(circle, #00d4ff 0%, #667eea 100%); 
+                        border-radius: 50%; 
+                        border: 2px solid white;
+                        box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+                        animation: pulse 2s infinite;
+                    "></div>
+                `,
+                className: 'custom-marker',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+            
+            const popupContent = `
+                <div style="background: #161618; color: white; padding: 10px; border-radius: 8px; min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: #00d4ff;">Vehicle: ${data.vehicle_id || 'Unknown'}</h4>
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Status:</strong> ${data.status || 'Active'}</p>
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Last Update:</strong> ${data.timestamp || new Date().toLocaleTimeString()}</p>
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Security Level:</strong> Quantum Secured</p>
+                    <div style="margin-top: 10px;">
+                        <button onclick="trackVehicle('${data.vehicle_id}')" style="
+                            background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            font-size: 11px;
+                            margin-right: 5px;
+                            cursor: pointer;
+                        ">Track</button>
+                        <button onclick="secureVehicle('${data.vehicle_id}')" style="
+                            background: linear-gradient(135deg, #ff4757 0%, #ff6b7d 100%);
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            font-size: 11px;
+                            cursor: pointer;
+                        ">Secure</button>
+                    </div>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent, {
+                className: 'custom-popup',
+                offset: [0, -10]
+            });
+
+            if (data.vehicle_id) {
+                vehicleMarkers.set(data.vehicle_id, marker);
+            }
+
+            return marker;
+        }
+
+        // Quantum Visualization
+        function initializeQuantumVisualization() {
+            const viz = document.getElementById('quantum-viz');
+            
+            for (let i = 0; i < 20; i++) {
+                createQuantumParticle(viz);
+            }
+        }
+
+        function createQuantumParticle(container) {
+            const particle = document.createElement('div');
+            particle.className = 'quantum-particle';
+            
+            particle.style.left = Math.random() * (container.offsetWidth - 4) + 'px';
+            particle.style.top = Math.random() * (container.offsetHeight - 4) + 'px';
+            particle.style.animationDelay = Math.random() * 4 + 's';
+            particle.style.animationDuration = (2 + Math.random() * 4) + 's';
+            
+            container.appendChild(particle);
+            
+            // Remove and recreate particle after animation
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.remove();
+                    createQuantumParticle(container);
+                }
+            }, (2 + Math.random() * 4) * 1000);
+        }
+
+        // Data Loading and Updates
+        async function loadInitialData() {
+            try {
+                await Promise.all([
+                    loadSystemStatus(),
+                    loadSecurityEvents(),
+                    loadVehicleData(),
+                    loadQuantumTokens()
+                ]);
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+                showToast('Failed to load system data', 'error');
+            }
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/system/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSystemMetrics(data);
+                }
+            } catch (error) {
+                console.error('Failed to load system status:', error);
+            }
+        }
+
+        async function loadSecurityEvents() {
+            try {
+                const response = await fetch(`${API_BASE}/security/events?hours=24`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSecurityEvents(data.events || []);
+                }
+            } catch (error) {
+                console.error('Failed to load security events:', error);
+            }
+        }
+
+        async function loadVehicleData() {
+            // Simulate vehicle data for demo
+            const simulatedVehicles = [
+                { vehicle_id: 'QV001', lat: 40.7128, lng: -74.0060, status: 'Active' },
+                { vehicle_id: 'QV002', lat: 40.7589, lng: -73.9851, status: 'Secure' },
+                { vehicle_id: 'QV003', lat: 40.6782, lng: -73.9442, status: 'Transit' }
+            ];
+
+            simulatedVehicles.forEach(vehicle => {
+                addCustomMarker([vehicle.lat, vehicle.lng], vehicle);
+            });
+
+            document.getElementById('active-vehicles').textContent = simulatedVehicles.length;
+        }
+
+        async function loadQuantumTokens() {
+            // Simulate quantum tokens
+            quantumTokens.set('QT001', { device_id: 'QV001', status: 'active', theta: 45, phi: 90 });
+            quantumTokens.set('QT002', { device_id: 'QV002', status: 'active', theta: 120, phi: 60 });
+            quantumTokens.set('QT003', { device_id: 'QV003', status: 'active', theta: 200, phi: 30 });
+        }
+
+        // Update System Metrics
+        function updateSystemMetrics(data) {
+            document.getElementById('metric-sessions').textContent = data.components?.active_sessions || '0';
+            document.getElementById('metric-tokens').textContent = quantumTokens.size;
+            document.getElementById('metric-gps').textContent = vehicleMarkers.size;
+            document.getElementById('metric-events').textContent = securityEvents.length;
+        }
+
+        // Update Security Events
+        function updateSecurityEvents(events) {
+            securityEvents = events;
+            const container = document.getElementById('security-events');
+            container.innerHTML = '';
+
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: var(--secondary-text); padding: 20px;">
+                        No security events in the last 24 hours
+                    </div>
+                `;
+                return;
+            }
+
+            events.slice(0, 10).forEach(event => {
+                const eventElement = document.createElement('div');
+                eventElement.className = `event-item ${getSeverityClass(event.severity)}`;
+                
+                const time = new Date(event.timestamp).toLocaleTimeString();
+                eventElement.innerHTML = `
+                    <div class="event-time">${time}</div>
+                    <div class="event-text">${event.event_type}: ${event.details?.reason || 'Security event detected'}</div>
+                `;
+                
+                container.appendChild(eventElement);
+            });
+        }
+
+        function getSeverityClass(severity) {
+            switch (severity?.toLowerCase()) {
+                case 'high': return 'danger';
+                case 'medium': return 'warning';
+                default: return '';
+            }
+        }
+
+        // Data Update Loop
+        function startDataUpdates() {
+            // Update every 30 seconds
+            setInterval(async () => {
+                await loadSystemStatus();
+                await loadSecurityEvents();
+                updateQuantumVisualization();
+                simulateVehicleMovement();
+            }, 30000);
+
+            // Faster updates for real-time data
+            setInterval(() => {
+                updateTimeBasedElements();
+            }, 5000);
+        }
+
+        function updateTimeBasedElements() {
+            // Update uptime
+            const uptimeElement = document.getElementById('uptime');
+            if (uptimeElement) {
+                const uptime = (99.8 + Math.random() * 0.2).toFixed(1);
+                uptimeElement.textContent = uptime + '%';
+            }
+        }
+
+        function simulateVehicleMovement() {
+            vehicleMarkers.forEach((marker, vehicleId) => {
+                const currentPos = marker.getLatLng();
+                const newLat = currentPos.lat + (Math.random() - 0.5) * 0.001;
+                const newLng = currentPos.lng + (Math.random() - 0.5) * 0.001;
+                
+                marker.setLatLng([newLat, newLng]);
+                
+                // Add trail effect
+                L.circle([newLat, newLng], {
+                    radius: 50,
+                    color: '#00d4ff',
+                    fillColor: '#00d4ff',
+                    fillOpacity: 0.2,
+                    opacity: 0.6
+                }).addTo(map);
+            });
+        }
+
+        // Navigation Functions
+        function switchView(view) {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to clicked item
+            event.target.closest('.nav-item').classList.add('active');
+            
+            currentView = view;
+            
+            // Update view-specific content
+            switch (view) {
+                case 'overview':
+                    showToast('Overview mode activated', 'success');
+                    break;
+                case 'gps':
+                    showToast('GPS tracking mode activated', 'success');
+                    focusOnVehicles();
+                    break;
+                case 'quantum':
+                    showToast('Quantum security mode activated', 'success');
+                    updateQuantumVisualization();
+                    break;
+                case 'security':
+                    showToast('Security monitoring mode activated', 'success');
+                    loadSecurityEvents();
+                    break;
+            }
+        }
+
+        function focusOnVehicles() {
+            if (vehicleMarkers.size > 0) {
+                const group = new L.featureGroup(Array.from(vehicleMarkers.values()));
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        function updateQuantumVisualization() {
+            const viz = document.getElementById('quantum-viz');
+            const existingParticles = viz.querySelectorAll('.quantum-particle');
+            
+            // Add some visual effects based on quantum token activity
+            existingParticles.forEach(particle => {
+                particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                particle.style.boxShadow = `0 0 ${5 + Math.random() * 15}px currentColor`;
+            });
+        }
+
+        // Action Functions
+        async function generateQuantumToken() {
+            const deviceId = document.getElementById('vehicle-id').value || `QV${String(Date.now()).slice(-3)}`;
+            
+            try {
+                showToast('Generating quantum token...', 'success');
+                
+                const response = await fetch(`${API_BASE}/quantum/generate?device_id=${deviceId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    quantumTokens.set(data.quantum_token.token_id, data.quantum_token);
+                    updateSystemMetrics({ components: { active_sessions: 0 } });
+                    showToast(`Quantum token generated for ${deviceId}`, 'success');
+                    
+                    // Add visual effect
+                    createQuantumBurst();
+                } else {
+                    throw new Error('Failed to generate token');
+                }
+            } catch (error) {
+                console.error('Token generation failed:', error);
+                showToast('Failed to generate quantum token', 'error');
+            }
+        }
+
+        function createQuantumBurst() {
+            const viz = document.getElementById('quantum-viz');
+            const burst = document.createElement('div');
+            burst.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 10px;
+                height: 10px;
+                background: radial-gradient(circle, #00d4ff, transparent);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                animation: quantumBurst 1s ease-out forwards;
+            `;
+            
+            const keyframes = `
+                @keyframes quantumBurst {
+                    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+                    100% { transform: translate(-50%, -50%) scale(10); opacity: 0; }
+                }
+            `;
+            
+            const style = document.createElement('style');
+            style.textContent = keyframes;
+            document.head.appendChild(style);
+            
+            viz.appendChild(burst);
+            
+            setTimeout(() => {
+                burst.remove();
+                style.remove();
+            }, 1000);
+        }
+
+        async function refreshData() {
+            document.getElementById('metrics-loading').style.display = 'inline-block';
+            showToast('Refreshing system data...', 'success');
+            
+            try {
+                await loadInitialData();
+                showToast('Data refreshed successfully', 'success');
+            } catch (error) {
+                showToast('Failed to refresh data', 'error');
+            } finally {
+                document.getElementById('metrics-loading').style.display = 'none';
+            }
+        }
+
+        function emergencyLockdown() {
+            if (confirm('Are you sure you want to initiate emergency lockdown? This will secure all connected vehicles.')) {
+                showToast('Emergency lockdown initiated', 'error');
+                
+                // Visual effects for lockdown
+                document.body.style.filter = 'hue-rotate(180deg)';
+                setTimeout(() => {
+                    document.body.style.filter = '';
+                }, 3000);
+                
+                // Lock all vehicles
+                vehicleMarkers.forEach((marker, vehicleId) => {
+                    secureVehicle(vehicleId);
+                });
+            }
+        }
+
+        async function executeVehicleAction() {
+            const vehicleId = document.getElementById('vehicle-id').value;
+            const action = document.getElementById('vehicle-action').value;
+            
+            if (!vehicleId) {
+                showToast('Please enter a vehicle ID', 'error');
+                return;
+            }
+            
+            showToast(`Executing ${action} for ${vehicleId}...`, 'success');
+            
+            switch (action) {
+                case 'track':
+                    trackVehicle(vehicleId);
+                    break;
+                case 'lock':
+                    secureVehicle(vehicleId);
+                    break;
+                case 'unlock':
+                    unlockVehicle(vehicleId);
+                    break;
+            }
+        }
+
+        function trackVehicle(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                map.setView(marker.getLatLng(), 15);
+                marker.openPopup();
+                showToast(`Tracking vehicle ${vehicleId}`, 'success');
+            } else {
+                showToast(`Vehicle ${vehicleId} not found`, 'error');
+            }
+        }
+
+        function secureVehicle(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                // Change marker appearance for secured state
+                const securedIcon = L.divIcon({
+                    html: `
+                        <div style="
+                            width: 20px; 
+                            height: 20px; 
+                            background: radial-gradient(circle, #ff4757 0%, #ff6b7d 100%); 
+                            border-radius: 50%; 
+                            border: 2px solid white;
+                            box-shadow: 0 0 20px rgba(255, 71, 87, 0.8);
+                            animation: pulse 2s infinite;
+                        "></div>
+                    `,
+                    className: 'custom-marker',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+                
+                marker.setIcon(securedIcon);
+                showToast(`Vehicle ${vehicleId} secured`, 'success');
+                
+                // Add security event
+                addSecurityEvent(`Vehicle ${vehicleId} secured via emergency protocol`, 'HIGH');
+            }
+        }
+
+        function unlockVehicle(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                // Reset to normal marker
+                const normalIcon = L.divIcon({
+                    html: `
+                        <div style="
+                            width: 20px; 
+                            height: 20px; 
+                            background: radial-gradient(circle, #00d4ff 0%, #667eea 100%); 
+                            border-radius: 50%; 
+                            border: 2px solid white;
+                            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+                            animation: pulse 2s infinite;
+                        "></div>
+                    `,
+                    className: 'custom-marker',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+                
+                marker.setIcon(normalIcon);
+                showToast(`Vehicle ${vehicleId} unlocked`, 'success');
+            }
+        }
+
+        function clearSecurityEvents() {
+            if (confirm('Clear all security events? This action cannot be undone.')) {
+                securityEvents = [];
+                updateSecurityEvents([]);
+                showToast('Security events cleared', 'success');
+            }
+        }
+
+        function addSecurityEvent(message, severity = 'MEDIUM') {
+            const event = {
+                timestamp: new Date().toISOString(),
+                event_type: 'MANUAL_ACTION',
+                severity: severity,
+                details: { reason: message }
+            };
+            
+            securityEvents.unshift(event);
+            updateSecurityEvents(securityEvents);
+        }
+
+        // Utility Functions
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 5px;">${type === 'success' ? 'Success' : 'Error'}</div>
+                <div style="font-size: 12px;">${message}</div>
+            `;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Hide and remove toast
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('auth_token');
+                showToast('Logged out successfully', 'success');
+                setTimeout(() => {
+                    showLogin();
+                }, 1000);
+            }
+        }
+
+        function showLogin() {
+            document.body.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, #0a0a0b 0%, #161618 100%);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                ">
+                    <div style="
+                        background: var(--secondary-bg);
+                        border: 1px solid var(--border-color);
+                        border-radius: 15px;
+                        padding: 40px;
+                        max-width: 400px;
+                        width: 90%;
+                        text-align: center;
+                    ">
+                        <h1 style="
+                            font-size: 28px;
+                            margin-bottom: 10px;
+                            background: var(--gradient-quantum);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                        ">Quantum Security</h1>
+                        <p style="color: var(--secondary-text); margin-bottom: 30px;">
+                            Access the command center with your credentials
+                        </p>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <input type="text" id="login-username" placeholder="Username" style="
+                                width: 100%;
+                                padding: 15px;
+                                background: rgba(255, 255, 255, 0.05);
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                color: var(--primary-text);
+                                font-size: 14px;
+                                margin-bottom: 15px;
+                            ">
+                            <input type="password" id="login-password" placeholder="Password" style="
+                                width: 100%;
+                                padding: 15px;
+                                background: rgba(255, 255, 255, 0.05);
+                                border: 1px solid var(--border-color);
+                                border-radius: 8px;
+                                color: var(--primary-text);
+                                font-size: 14px;
+                            ">
+                        </div>
+                        
+                        <button onclick="performLogin()" style="
+                            width: 100%;
+                            padding: 15px;
+                            background: var(--gradient-quantum);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            margin-bottom: 20px;
+                        ">Access System</button>
+                        
+                        <div style="font-size: 12px; color: var(--secondary-text);">
+                            Demo credentials:<br>
+                            admin / admin123<br>
+                            operator / operator123
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function performLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login?username=${username}&password=${password}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('auth_token', data.access_token);
+                    authToken = data.access_token;
+                    location.reload();
+                } else {
+                    alert('Invalid credentials');
+                }
+            } catch (error) {
+                console.error('Login failed:', error);
+                // For demo purposes, allow login with demo credentials
+                if ((username === 'admin' && password === 'admin123') || 
+                    (username === 'operator' && password === 'operator123')) {
+                    localStorage.setItem('auth_token', 'demo_token');
+                    authToken = 'demo_token';
+                    location.reload();
+                } else {
+                    alert('Login failed. Use demo credentials.');
+                }
+            }
+        }
+
+        // Add some demo data and animations
+        setTimeout(() => {
+            if (authToken) {
+                // Simulate incoming security events
+                setInterval(() => {
+                    const events = [
+                        'Quantum token verified successfully',
+                        'Vehicle perimeter secured',
+                        'GPS encryption updated',
+                        'System integrity check passed',
+                        'Authentication token renewed'
+                    ];
+                    
+                    const randomEvent = events[Math.floor(Math.random() * events.length)];
+                    addSecurityEvent(randomEvent, 'LOW');
+                }, 15000);
+                
+                // Simulate system activity
+                setInterval(() => {
+                    const metrics = ['metric-sessions', 'metric-tokens', 'metric-gps'];
+                    const randomMetric = metrics[Math.floor(Math.random() * metrics.length)];
+                    const element = document.getElementById(randomMetric);
+                    if (element) {
+                        const currentValue = parseInt(element.textContent) || 0;
+                        element.textContent = Math.max(0, currentValue + Math.floor(Math.random() * 3) - 1);
+                    }
+                }, 10000);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
