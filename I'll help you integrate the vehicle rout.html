@@ -1,0 +1,3347 @@
+I'll help you integrate the vehicle routing features into your existing frontend while preserving all current functionalities. Here's the enhanced version with the routing features seamlessly added:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Cybersecurity Command Center</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-bg: #0a0a0b;
+            --secondary-bg: #161618;
+            --accent-bg: #1a1a1d;
+            --primary-text: #ffffff;
+            --secondary-text: #a0a0a5;
+            --accent-color: #00d4ff;
+            --success-color: #00ff88;
+            --warning-color: #ffb800;
+            --danger-color: #ff4757;
+            --route-color: #667eea;
+            --checkpoint-authorized: #00ff88;
+            --checkpoint-unauthorized: #ff4757;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-quantum: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+            --gradient-danger: linear-gradient(135deg, #ff4757 0%, #ff6b7d 100%);
+            --border-color: #2a2a2d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            overflow-x: hidden;
+            font-size: 14px;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundShift {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            33% { transform: translateX(-20px) translateY(-10px); }
+            66% { transform: translateX(20px) translateY(10px); }
+        }
+
+        /* Navigation Header */
+        .nav-header {
+            background: linear-gradient(135deg, rgba(22, 22, 24, 0.9) 0%, rgba(26, 26, 29, 0.9) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 30px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-title {
+            font-size: 24px;
+            font-weight: 700;
+            background: var(--gradient-quantum);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from { filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.8)); }
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--success-color);
+            border-radius: 25px;
+            font-size: 12px;
+            animation: statusPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(0, 255, 136, 0.8); }
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        .status-secure { background: var(--success-color); }
+        .status-moving { background: var(--warning-color); }
+        .status-locked { background: var(--danger-color); }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: 1fr;
+            height: 100vh;
+            gap: 15px;
+            padding: 100px 15px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .main-container.fullscreen-map {
+            grid-template-columns: 60px 1fr 60px;
+        }
+
+        .main-container.expanded-map {
+            grid-template-columns: 200px 1fr 200px;
+        }
+
+        .main-container.map-only {
+            grid-template-columns: 1fr;
+            padding: 100px 10px 10px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, rgba(26, 26, 29, 0.8) 100%);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            min-height: calc(100vh - 130px);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-260px);
+            opacity: 0.1;
+        }
+
+        .sidebar.hidden {
+            display: none;
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-item:hover::before {
+            left: 100%;
+        }
+
+        .nav-item:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--accent-color);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .nav-item.active {
+            background: var(--gradient-quantum);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover .nav-icon {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        /* Route Planning Panel */
+        .route-panel {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, rgba(26, 26, 29, 0.8) 100%);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none; /* Hidden by default, shown only in routing mode */
+        }
+
+        .route-panel.active {
+            display: block;
+        }
+
+        .route-planning-form {
+            display: grid;
+            gap: 15px;
+        }
+
+        .coordinate-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .checkpoint-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .checkpoint-item.authorized {
+            border-left: 4px solid var(--checkpoint-authorized);
+        }
+
+        .checkpoint-item.unauthorized {
+            border-left: 4px solid var(--checkpoint-unauthorized);
+        }
+
+        .checkpoint-info {
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .checkpoint-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .vehicle-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* Route visualization styles */
+        .route-line {
+            stroke: var(--route-color);
+            stroke-width: 4;
+            fill: none;
+            stroke-dasharray: 10, 5;
+            animation: routeFlow 2s linear infinite;
+        }
+
+        @keyframes routeFlow {
+            to { stroke-dashoffset: -15; }
+        }
+
+        .checkpoint-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .checkpoint-authorized-marker {
+            background: var(--checkpoint-authorized);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+        }
+
+        .checkpoint-unauthorized-marker {
+            background: var(--checkpoint-unauthorized);
+            box-shadow: 0 0 15px rgba(255, 71, 87, 0.6);
+        }
+
+        /* Vehicle movement animation */
+        .moving-vehicle {
+            animation: vehicleMove 3s ease-in-out infinite;
+        }
+
+        @keyframes vehicleMove {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Security alert overlay */
+        .security-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, var(--danger-color) 0%, rgba(255, 71, 87, 0.9) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(20px);
+            z-index: 10000;
+            text-align: center;
+            animation: securityPulse 1s ease-in-out infinite;
+            box-shadow: 0 20px 60px rgba(255, 71, 87, 0.5);
+            display: none;
+        }
+
+        @keyframes securityPulse {
+            0%, 100% { box-shadow: 0 20px 60px rgba(255, 71, 87, 0.5); }
+            50% { box-shadow: 0 30px 80px rgba(255, 71, 87, 0.8); }
+        }
+
+        /* Map Container */
+        .map-container {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, rgba(26, 26, 29, 0.8) 100%);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            min-height: calc(100vh - 130px);
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .map-container.full-width {
+            grid-column: 1 / -1;
+            margin: 0 280px;
+        }
+
+        #satellite-map {
+            width: 100%;
+            height: 100%;
+            min-height: calc(100vh - 130px);
+            border-radius: 15px;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(22, 22, 24, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            z-index: 1000;
+            animation: overlayFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes overlayFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .map-control-btn {
+            padding: 10px;
+            background: rgba(22, 22, 24, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--primary-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .map-control-btn:hover::before {
+            left: 100%;
+        }
+
+        .map-control-btn:hover {
+            background: rgba(0, 212, 255, 0.1);
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .map-control-btn.active {
+            background: var(--gradient-quantum);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .map-zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(22, 22, 24, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--primary-text);
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .zoom-btn:hover {
+            background: var(--gradient-quantum);
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            max-height: calc(100vh - 130px);
+            transition: all 0.3s ease;
+        }
+
+        .control-panel.collapsed {
+            transform: translateX(300px);
+            opacity: 0.1;
+        }
+
+        .control-panel.hidden {
+            display: none;
+        }
+
+        .panel-card {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, rgba(26, 26, 29, 0.8) 100%);
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .panel-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .panel-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-quantum);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--accent-color);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 0.8s ease;
+        }
+
+        .metric-item:hover::before {
+            left: 100%;
+        }
+
+        .metric-item:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-color);
+            animation: numberGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes numberGlow {
+            from { text-shadow: 0 0 5px rgba(0, 212, 255, 0.5); }
+            to { text-shadow: 0 0 15px rgba(0, 212, 255, 0.8); }
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Quantum Visualization */
+        .quantum-viz {
+            height: 200px;
+            position: relative;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            border-radius: 10px;
+            overflow: hidden;
+            animation: quantumField 5s ease-in-out infinite alternate;
+        }
+
+        @keyframes quantumField {
+            from { background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1) 0%, transparent 70%); }
+            to { background: radial-gradient(circle at center, rgba(102, 126, 234, 0.1) 0%, transparent 70%); }
+        }
+
+        .quantum-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: quantumFloat 4s ease-in-out infinite;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        @keyframes quantumFloat {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1);
+                opacity: 0.8;
+            }
+            25% { 
+                transform: translate(20px, -15px) scale(1.2);
+                opacity: 1;
+            }
+            50% { 
+                transform: translate(-10px, 20px) scale(0.8);
+                opacity: 0.6;
+            }
+            75% { 
+                transform: translate(15px, 10px) scale(1.1);
+                opacity: 0.9;
+            }
+        }
+
+        /* Security Events */
+        .event-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            border-left: 3px solid var(--success-color);
+            transition: all 0.3s ease;
+            animation: slideInLeft 0.5s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .event-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .event-item.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .event-item.danger {
+            border-left-color: var(--danger-color);
+            animation: dangerPulse 2s ease-in-out infinite;
+        }
+
+        .event-item.high {
+            border-left-color: var(--danger-color);
+        }
+
+        .event-item.medium {
+            border-left-color: var(--warning-color);
+        }
+
+        .event-item.low {
+            border-left-color: var(--success-color);
+        }
+
+        @keyframes dangerPulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 71, 87, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(255, 71, 87, 0.6); }
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: var(--secondary-text);
+            margin-right: 10px;
+            min-width: 50px;
+        }
+
+        .event-text {
+            font-size: 12px;
+            flex: 1;
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-top: 2px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            background: var(--gradient-quantum);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 10px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #00cc6a 100%);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: var(--secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--primary-text);
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, rgba(26, 26, 29, 0.9) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 300px;
+            z-index: 10000;
+            transform: translateX(350px);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            animation: toastSlideIn 0.3s ease-out;
+        }
+
+        @keyframes toastSlideIn {
+            from { transform: translateX(350px) scale(0.8); opacity: 0; }
+            to { transform: translateX(0) scale(1); opacity: 1; }
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .toast.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        /* Custom Marker Animations */
+        @keyframes markerPulse {
+            0%, 100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        .custom-marker {
+            animation: markerPulse 2s ease-in-out infinite;
+        }
+
+        /* Quantum Burst Effect */
+        @keyframes quantumBurst {
+            0% { 
+                transform: translate(-50%, -50%) scale(0) rotate(0deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(-50%, -50%) scale(10) rotate(360deg); 
+                opacity: 0; 
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 220px 1fr 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                padding: 100px 5px 5px;
+            }
+            
+            .sidebar, .control-panel {
+                display: none;
+            }
+
+            .map-container {
+                min-height: calc(100vh - 110px);
+            }
+
+            #satellite-map {
+                min-height: calc(100vh - 110px);
+            }
+
+            .nav-header {
+                padding: 10px 15px;
+            }
+
+            .nav-title {
+                font-size: 18px;
+            }
+
+            .nav-controls {
+                gap: 10px;
+            }
+
+            .btn {
+                padding: 8px 12px;
+                font-size: 11px;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--secondary-bg);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-quantum);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+
+        /* Additional Interactive Elements */
+        .interactive-glow {
+            transition: all 0.3s ease;
+        }
+
+        .interactive-glow:hover {
+            filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+        }
+
+        /* Holographic Effect */
+        .holographic {
+            position: relative;
+            background: linear-gradient(45deg, transparent 30%, rgba(0, 212, 255, 0.1) 50%, transparent 70%);
+            background-size: 200% 200%;
+            animation: holographicShift 3s ease-in-out infinite;
+        }
+
+        @keyframes holographicShift {
+            0%, 100% { background-position: 0% 0%; }
+            50% { background-position: 100% 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+    
+    <!-- Navigation Header -->
+    <div class="nav-header">
+        <div class="nav-title">Quantum Cybersecurity Command Center</div>
+        <div class="nav-controls">
+            <div class="status-indicator">
+                <div class="status-dot" id="system-status-dot"></div>
+                <span id="system-status-text">System Operational</span>
+            </div>
+            <button class="btn btn-sm interactive-glow" onclick="toggleRouteMode()">Route Mode</button>
+            <button class="btn btn-sm interactive-glow" onclick="toggleFullscreen()">Fullscreen</button>
+            <button class="btn btn-sm interactive-glow" onclick="toggleMapView()">Big Map</button>
+            <button class="btn btn-sm btn-danger interactive-glow" onclick="emergencyLockdown()">Emergency</button>
+            <button class="btn btn-sm btn-danger interactive-glow" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar holographic">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Navigation</div>
+                <div class="nav-item active" onclick="switchView('overview', event)">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                    </svg>
+                    Overview
+                </div>
+                <div class="nav-item" onclick="switchView('gps', event)">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
+                    GPS Tracking
+                </div>
+                <div class="nav-item" onclick="switchView('routing', event)">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"/>
+                    </svg>
+                    Vehicle Routing
+                </div>
+                <div class="nav-item" onclick="switchView('quantum', event)">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Quantum Tokens
+                </div>
+                <div class="nav-item" onclick="switchView('security', event)">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+                    </svg>
+                    Security
+                </div>
+            </div>
+
+            <!-- Route Planning Panel -->
+            <div class="route-panel" id="route-planning-panel">
+                <div class="sidebar-title">🗺️ Route Planning</div>
+                <div class="route-planning-form">
+                    <div>
+                        <label class="form-label">Vehicle ID</label>
+                        <select class="form-input" id="route-vehicle-select">
+                            <option value="">Select Vehicle</option>
+                            <option value="QV001">QV001 - Patrol Unit</option>
+                            <option value="QV002">QV002 - Transport</option>
+                            <option value="QV003">QV003 - Escort</option>
+                            <option value="QV004">QV004 - Surveillance</option>
+                            <option value="QV005">QV005 - Response</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Start Location</label>
+                        <div class="coordinate-input">
+                            <input type="number" step="0.000001" class="form-input" id="start-lat" placeholder="Latitude">
+                            <input type="number" step="0.000001" class="form-input" id="start-lng" placeholder="Longitude">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label">End Location</label>
+                        <div class="coordinate-input">
+                            <input type="number" step="0.000001" class="form-input" id="end-lat" placeholder="Latitude">
+                            <input type="number" step="0.000001" class="form-input" id="end-lng" placeholder="Longitude">
+                        </div>
+                    </div>
+
+                    <button class="btn" onclick="captureMapCoordinates()">📍 Use Map Click</button>
+                    <button class="btn btn-success" onclick="createRoute()">Create Route</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div class="sidebar-title">🚩 Checkpoints</div>
+                    <div style="margin-bottom: 10px;">
+                        <input type="text" class="form-input" id="checkpoint-name" placeholder="Checkpoint Name" style="margin-bottom: 5px;">
+                        <div class="coordinate-input" style="margin-bottom: 5px;">
+                            <input type="number" step="0.000001" class="form-input" id="checkpoint-lat" placeholder="Latitude">
+                            <input type="number" step="0.000001" class="form-input" id="checkpoint-lng" placeholder="Longitude">
+                        </div>
+                        <select class="form-input" id="checkpoint-auth" style="margin-bottom: 5px;">
+                            <option value="true">Authorized Stop</option>
+                            <option value="false">Unauthorized (Risk)</option>
+                        </select>
+                        <button class="btn btn-sm" onclick="addCheckpoint()" style="width: 100%;">Add Checkpoint</button>
+                    </div>
+                    <div id="checkpoints-list"></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">Quick Actions</div>
+                <button class="btn interactive-glow" style="width: 100%; margin-bottom: 10px;" onclick="generateQuantumToken()">
+                    Generate Token
+                </button>
+                <button class="btn interactive-glow" style="width: 100%; margin-bottom: 10px;" onclick="refreshData()">
+                    Refresh Data
+                </button>
+                <button class="btn btn-danger interactive-glow" style="width: 100%;" onclick="emergencyLockdown()">
+                    Emergency Lock
+                </button>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">System Health</div>
+                <div class="metric-item">
+                    <div class="metric-value" id="uptime">99.8%</div>
+                    <div class="metric-label">Uptime</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="threats">0</div>
+                    <div class="metric-label">Active Threats</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container holographic">
+            <div id="satellite-map"></div>
+            <div class="map-overlay">
+                <div style="font-weight: 600; margin-bottom: 5px;" id="map-mode">Live GPS Tracking</div>
+                <div style="font-size: 12px; color: var(--secondary-text);" id="map-instruction">
+                    Active Vehicles: <span id="active-vehicles">0</span>
+                </div>
+            </div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="map-control-btn active" onclick="toggleMapLayer('satellite', event)" title="Satellite View">
+                    🛰️ Satellite
+                </button>
+                <button class="map-control-btn" onclick="toggleMapLayer('street', event)" title="Street View">
+                    🗺️ Street
+                </button>
+                <button class="map-control-btn" onclick="toggleMapLayer('hybrid', event)" title="Hybrid View">
+                    🌍 Hybrid
+                </button>
+                <button class="map-control-btn" onclick="centerOnVehicles()" title="Center on Vehicles">
+                    🎯 Center
+                </button>
+                <button class="map-control-btn" onclick="toggleHeatmap()" title="Toggle Heatmap">
+                    🔥 Heat
+                </button>
+                <button class="map-control-btn" onclick="clearRoute()" id="clear-route-btn" style="display: none;">
+                    🚫 Clear Route
+                </button>
+                <button class="map-control-btn" onclick="startSelectedRoute()" id="start-route-btn" disabled style="display: none;">
+                    ▶️ Start Route
+                </button>
+            </div>
+            
+            <!-- Zoom Controls -->
+            <div class="map-zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                <button class="zoom-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                <button class="zoom-btn" onclick="resetZoom()" title="Reset View">⌂</button>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <!-- System Metrics -->
+            <div class="panel-card">
+                <div class="card-title">
+                    System Metrics
+                    <span class="loading" id="metrics-loading" style="display: none;"></span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-sessions">0</div>
+                        <div class="metric-label">Active Sessions</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-tokens">0</div>
+                        <div class="metric-label">Quantum Tokens</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-gps">0</div>
+                        <div class="metric-label">GPS Records</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metric-events">0</div>
+                        <div class="metric-label">Security Events</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vehicle Status Panel -->
+            <div class="panel-card" id="vehicle-status-panel">
+                <div class="card-title">🚗 Vehicle Status</div>
+                <div id="vehicle-status-list">
+                    <!-- Vehicle statuses will be populated here -->
+                </div>
+            </div>
+
+            <!-- Route Progress Panel -->
+            <div class="panel-card" id="route-progress-panel" style="display: none;">
+                <div class="card-title">📍 Route Progress</div>
+                <div id="route-progress">
+                    <div style="text-align: center; color: var(--secondary-text); padding: 20px;">
+                        No active route
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantum Visualization -->
+            <div class="panel-card">
+                <div class="card-title">Quantum State</div>
+                <div class="quantum-viz" id="quantum-viz">
+                    <!-- Particles will be generated here -->
+                </div>
+            </div>
+
+            <!-- Security Events -->
+            <div class="panel-card" style="flex: 1;">
+                <div class="card-title">
+                    Security Events
+                    <button class="btn btn-sm interactive-glow" onclick="clearSecurityEvents()">Clear</button>
+                </div>
+                <div class="event-list" id="security-events">
+                    <!-- Events will be populated here -->
+                </div>
+            </div>
+
+            <!-- Vehicle Control / Emergency Controls -->
+            <div class="panel-card">
+                <div class="card-title" id="vehicle-control-title">Vehicle Control</div>
+                <div id="normal-vehicle-control">
+                    <div class="form-group">
+                        <label class="form-label">Vehicle ID</label>
+                        <input type="text" class="form-input" id="vehicle-id" placeholder="Enter vehicle ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Action</label>
+                        <select class="form-input" id="vehicle-action">
+                            <option value="track">Track Location</option>
+                            <option value="lock">Emergency Lock</option>
+                            <option value="unlock">Unlock</option>
+                            <option value="locate">Locate Vehicle</option>
+                            <option value="immobilize">Immobilize</option>
+                            <option value="status">Status Check</option>
+                            <option value="ping">Ping Vehicle</option>
+                        </select>
+                    </div>
+                    <button class="btn interactive-glow" style="width: 100%;" onclick="executeVehicleAction()">
+                        Execute Action
+                    </button>
+                </div>
+                
+                <!-- Emergency Controls (shown in routing mode) -->
+                <div id="emergency-controls" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Vehicle ID</label>
+                        <input type="text" class="form-input" id="emergency-vehicle-id" placeholder="Vehicle ID">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Authorization Code</label>
+                        <input type="password" class="form-input" id="auth-code" placeholder="QUANTUM_UNLOCK_2024">
+                    </div>
+                    <button class="btn btn-danger interactive-glow" onclick="unlockVehicle()" style="width: 100%; margin-bottom: 10px;">
+                        🔓 Emergency Unlock
+                    </button>
+                    <button class="btn btn-danger interactive-glow" onclick="lockAllVehicles()" style="width: 100%;">
+                        🔒 Lock All Vehicles
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Alert Modal -->
+    <div id="security-alert" class="security-alert">
+        <h2 style="margin-bottom: 15px; color: white;">🚨 SECURITY VIOLATION</h2>
+        <div id="security-alert-message" style="margin-bottom: 20px; font-size: 16px;"></div>
+        <button class="btn" onclick="closeSecurityAlert()" style="background: rgba(255, 255, 255, 0.2);">
+            Acknowledge
+        </button>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-routing-machine/3.2.12/leaflet-routing-machine.min.js"></script>
+    <script>
+        // Global Variables
+        let map;
+        let satelliteLayer;
+        let streetLayer;
+        let hybridLayer;
+        let currentMapLayer = 'satellite';
+        let heatmapVisible = false;
+        let mapExpanded = false;
+        let vehicleMarkers = new Map();
+        let quantumTokens = new Map();
+        let securityEvents = [];
+        let currentView = 'overview';
+        let authToken = null;
+        var API_BASE = '/api/v1';
+
+        // New routing variables
+        let routeControl = null;
+        let checkpoints = [];
+        let currentRoute = null;
+        let activeRoutes = new Map();
+        let routeMode = false;
+        let clickedPoints = [];
+        let movementIntervals = new Map();
+        let vehicleRoutes = new Map();
+
+        let sessionData = {
+            user : null,
+            token : null
+        }
+
+        async function loadConfig() {
+            // Use environment-based configuration
+            const isDevelopment = window.location.hostname === 'localhost' || 
+                                window.location.hostname === '127.0.0.1';
+            
+            if (isDevelopment) {
+                API_BASE = 'http://localhost:8000/api/v1';
+            } else {
+                // Production - same origin
+                API_BASE = '/api/v1';
+            }
+            
+            console.log('API Configuration:', {
+                hostname: window.location.hostname,
+                isDevelopment,
+                API_BASE
+            });
+            
+            // Test connection
+            try {
+                const response = await fetch(`${API_BASE.replace('/api/v1', '')}/health`);
+                if (response.ok) {
+                    showToast('Backend connected successfully', 'success');
+                } else {
+                    throw new Error(`Health check failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.warn('Backend health check failed:', error);
+                showToast('Backend connection warning - using fallback mode', 'warning');
+            }
+        }
+
+        // Storage functions (using localStorage for persistence)
+        function getStoredToken() {
+            return localStorage.getItem('auth_token');
+        }
+
+        function setStoredToken(token) {
+            localStorage.setItem('auth_token', token);
+        }
+
+        function removeStoredToken() {
+            localStorage.removeItem('auth_token');
+        }
+
+        // Global error handler
+        function handleApiError(error, fallbackMessage = 'Operation failed') {
+            console.error('API Error:', error);
+            
+            if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+                showToast('Connection error - using demo mode', 'error');
+                return true;
+            } else if (error.status === 401) {
+                showToast('Session expired - please login again', 'error');
+                setTimeout(() => showLogin(), 2000);
+                return false;
+            } else {
+                showToast(fallbackMessage, 'error');
+                return true;
+            }
+        }
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadConfig();
+            authToken = getStoredToken();
+            if (!authToken) {
+                showLogin();
+                return;
+            }
+            
+            initializeMap();
+            initializeQuantumVisualization();
+            startDataUpdates();
+            loadInitialData();
+        });
+
+        // Map Initialization
+        function initializeMap() {
+            map = L.map('satellite-map', {
+                zoomControl: false
+            }).setView([40.7128, -74.0060], 10);
+            
+            // Satellite Layer (default)
+            satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Quantum Cybersecurity System',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Street Layer
+            streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Quantum Cybersecurity System',
+                maxZoom: 18
+            });
+
+            // Hybrid Layer (satellite + labels)
+            hybridLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Quantum Cybersecurity System',
+                maxZoom: 18,
+                opacity: 0.5
+            });
+
+            // Add custom event handlers
+            map.on('click', function(e) {
+                if (routeMode) {
+                    handleMapClick(e);
+                } else {
+                    addCustomMarker(e.latlng);
+                }
+            });
+
+            map.on('zoomend', function() {
+                updateMapOverlay();
+            });
+
+            map.on('moveend', function() {
+                updateMapOverlay();
+            });
+        }
+
+        // Route Planning Functions
+        function toggleRouteMode() {
+            routeMode = !routeMode;
+            const btn = event.target;
+            const routePanel = document.getElementById('route-planning-panel');
+            const clearBtn = document.getElementById('clear-route-btn');
+            const startBtn = document.getElementById('start-route-btn');
+            const vehicleControlTitle = document.getElementById('vehicle-control-title');
+            const normalControl = document.getElementById('normal-vehicle-control');
+            const emergencyControl = document.getElementById('emergency-controls');
+            const routeProgressPanel = document.getElementById('route-progress-panel');
+            
+            if (routeMode) {
+                btn.textContent = 'Exit Route Mode';
+                btn.classList.add('btn-danger');
+                routePanel.classList.add('active');
+                clearBtn.style.display = 'block';
+                startBtn.style.display = 'block';
+                vehicleControlTitle.textContent = '🚨 Emergency Controls';
+                normalControl.style.display = 'none';
+                emergencyControl.style.display = 'block';
+                routeProgressPanel.style.display = 'block';
+                
+                document.getElementById('map-mode').textContent = 'Route Planning Mode';
+                document.getElementById('map-instruction').textContent = 'Click to set route points';
+                map.getContainer().style.cursor = 'crosshair';
+                showToast('Route planning mode activated', 'success');
+            } else {
+                btn.textContent = 'Route Mode';
+                btn.classList.remove('btn-danger');
+                routePanel.classList.remove('active');
+                clearBtn.style.display = 'none';
+                startBtn.style.display = 'none';
+                vehicleControlTitle.textContent = 'Vehicle Control';
+                normalControl.style.display = 'block';
+                emergencyControl.style.display = 'none';
+                routeProgressPanel.style.display = 'none';
+                
+                document.getElementById('map-mode').textContent = 'Live GPS Tracking';
+                document.getElementById('map-instruction').innerHTML = 'Active Vehicles: <span id="active-vehicles">' + vehicleMarkers.size + '</span>';
+                map.getContainer().style.cursor = '';
+                clickedPoints = [];
+                showToast('Normal mode activated', 'success');
+            }
+        }
+
+        function handleMapClick(e) {
+            const lat = e.latlng.lat.toFixed(6);
+            const lng = e.latlng.lng.toFixed(6);
+            
+            if (clickedPoints.length === 0) {
+                // Set start point
+                document.getElementById('start-lat').value = lat;
+                document.getElementById('start-lng').value = lng;
+                clickedPoints.push({lat: parseFloat(lat), lng: parseFloat(lng)});
+                
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup('Start Point')
+                    .openPopup();
+                    
+                showToast('Start point set. Click for end point.', 'success');
+            } else if (clickedPoints.length === 1) {
+                // Set end point
+                document.getElementById('end-lat').value = lat;
+                document.getElementById('end-lng').value = lng;
+                clickedPoints.push({lat: parseFloat(lat), lng: parseFloat(lng)});
+                
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup('End Point')
+                    .openPopup();
+                    
+                showToast('End point set. Add checkpoints or create route.', 'success');
+            } else {
+                // Add checkpoint
+                document.getElementById('checkpoint-lat').value = lat;
+                document.getElementById('checkpoint-lng').value = lng;
+                
+                showToast('Checkpoint coordinates captured. Add details and save.', 'success');
+            }
+        }
+
+        function captureMapCoordinates() {
+            if (!routeMode) {
+                toggleRouteMode();
+            }
+            showToast('Click on map to capture coordinates', 'success');
+        }
+
+        function addCheckpoint() {
+            const name = document.getElementById('checkpoint-name').value;
+            const lat = parseFloat(document.getElementById('checkpoint-lat').value);
+            const lng = parseFloat(document.getElementById('checkpoint-lng').value);
+            const isAuthorized = document.getElementById('checkpoint-auth').value === 'true';
+
+            if (!name || !lat || !lng) {
+                showToast('Please fill all checkpoint details', 'error');
+                return;
+            }
+
+            const checkpoint = {
+                id: `CP_${Date.now()}`,
+                name: name,
+                lat: lat,
+                lng: lng,
+                is_authorized: isAuthorized,
+                stop_duration_minutes: 5
+            };
+
+            checkpoints.push(checkpoint);
+            updateCheckpointsList();
+            addCheckpointToMap(checkpoint);
+
+            // Clear form
+            document.getElementById('checkpoint-name').value = '';
+            document.getElementById('checkpoint-lat').value = '';
+            document.getElementById('checkpoint-lng').value = '';
+
+            showToast(`Checkpoint "${name}" added`, 'success');
+        }
+
+        function updateCheckpointsList() {
+            const container = document.getElementById('checkpoints-list');
+            container.innerHTML = '';
+
+            checkpoints.forEach((checkpoint, index) => {
+                const item = document.createElement('div');
+                item.className = `checkpoint-item ${checkpoint.is_authorized ? 'authorized' : 'unauthorized'}`;
+                item.innerHTML = `
+                    <div class="checkpoint-info">
+                        <div style="font-weight: 600; color: ${checkpoint.is_authorized ? 'var(--checkpoint-authorized)' : 'var(--checkpoint-unauthorized)'}; font-size: 11px;">
+                            ${checkpoint.name}
+                        </div>
+                        <div style="font-size: 10px; color: var(--secondary-text);">
+                            ${checkpoint.lat.toFixed(4)}, ${checkpoint.lng.toFixed(4)}
+                        </div>
+                        <div style="font-size: 9px; color: ${checkpoint.is_authorized ? 'var(--checkpoint-authorized)' : 'var(--checkpoint-unauthorized)'};">
+                            ${checkpoint.is_authorized ? 'AUTHORIZED' : 'UNAUTHORIZED'}
+                        </div>
+                    </div>
+                    <div class="checkpoint-controls">
+                        <button class="btn btn-sm" style="padding: 3px 6px; font-size: 9px;" onclick="removeCheckpoint(${index})">
+                            Remove
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function removeCheckpoint(index) {
+            const checkpoint = checkpoints[index];
+            checkpoints.splice(index, 1);
+            updateCheckpointsList();
+            
+            // Remove from map
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker && layer.options.checkpointId === checkpoint.id) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            showToast(`Checkpoint "${checkpoint.name}" removed`, 'success');
+        }
+
+        function addCheckpointToMap(checkpoint) {
+            const icon = L.divIcon({
+                html: `<div class="checkpoint-marker ${checkpoint.is_authorized ? 'checkpoint-authorized-marker' : 'checkpoint-unauthorized-marker'}"></div>`,
+                className: 'custom-checkpoint',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const marker = L.marker([checkpoint.lat, checkpoint.lng], { 
+                icon: icon,
+                checkpointId: checkpoint.id 
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div style="color: black; font-size: 12px;">
+                    <strong>${checkpoint.name}</strong><br>
+                    Status: ${checkpoint.is_authorized ? 'AUTHORIZED' : 'UNAUTHORIZED'}<br>
+                    Duration: ${checkpoint.stop_duration_minutes} minutes
+                </div>
+            `);
+        }
+
+        async function createRoute() {
+            const vehicleId = document.getElementById('route-vehicle-select').value;
+            const startLat = parseFloat(document.getElementById('start-lat').value);
+            const startLng = parseFloat(document.getElementById('start-lng').value);
+            const endLat = parseFloat(document.getElementById('end-lat').value);
+            const endLng = parseFloat(document.getElementById('end-lng').value);
+
+            if (!vehicleId || !startLat || !startLng || !endLat || !endLng) {
+                showToast('Please fill all route details', 'error');
+                return;
+            }
+
+            const routeData = {
+                vehicle_id: vehicleId,
+                start_lat: startLat,
+                start_lng: startLng,
+                end_lat: endLat,
+                end_lng: endLng,
+                checkpoints: checkpoints
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/vehicles/routes/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(routeData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    currentRoute = result.route_id;
+                    
+                    showToast(`Route created for ${vehicleId}`, 'success');
+                    drawRouteOnMap(routeData, result.route_id);
+                    loadActiveRoutes();
+                    
+                    document.getElementById('start-route-btn').disabled = false;
+                } else {
+                    throw new Error('Failed to create route');
+                }
+            } catch (error) {
+                console.error('Route creation failed:', error);
+                // Demo mode fallback
+                const routeId = `RT_${Date.now()}`;
+                currentRoute = routeId;
+                
+                showToast(`Demo route created for ${vehicleId}`, 'success');
+                drawRouteOnMap(routeData, routeId);
+                document.getElementById('start-route-btn').disabled = false;
+            }
+        }
+
+        function drawRouteOnMap(routeData, routeId) {
+            // Clear existing route
+            if (routeControl) {
+                map.removeControl(routeControl);
+            }
+
+            // Create waypoints including checkpoints
+            const waypoints = [
+                L.latLng(routeData.start_lat, routeData.start_lng),
+                ...checkpoints.map(cp => L.latLng(cp.lat, cp.lng)),
+                L.latLng(routeData.end_lat, routeData.end_lng)
+            ];
+
+            // Draw route line
+            routeControl = L.Routing.control({
+                waypoints: waypoints,
+                routeWhileDragging: false,
+                addWaypoints: false,
+                createMarker: function() { return null; }, // We'll handle markers ourselves
+                lineOptions: {
+                    styles: [{ color: 'var(--route-color)', weight: 4, opacity: 0.8 }]
+                }
+            }).addTo(map);
+
+            // Store route info
+            activeRoutes.set(routeId, {
+                vehicle_id: routeData.vehicle_id,
+                route_data: routeData,
+                status: 'planned'
+            });
+
+            updateRouteProgress();
+        }
+
+        async function startSelectedRoute() {
+            if (!currentRoute) {
+                showToast('No route selected', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/vehicles/routes/${currentRoute}/start`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const routeInfo = activeRoutes.get(currentRoute);
+                    if (routeInfo) {
+                        routeInfo.status = 'active';
+                        startVehicleMovement(routeInfo.vehicle_id, currentRoute);
+                        showToast(`Route started for ${routeInfo.vehicle_id}`, 'success');
+                        updateRouteProgress();
+                    }
+                } else {
+                    throw new Error('Failed to start route');
+                }
+            } catch (error) {
+                console.error('Route start failed:', error);
+                // Demo mode fallback
+                const routeInfo = activeRoutes.get(currentRoute);
+                if (routeInfo) {
+                    routeInfo.status = 'active';
+                    startVehicleMovement(routeInfo.vehicle_id, currentRoute);
+                    showToast(`Demo route started for ${routeInfo.vehicle_id}`, 'success');
+                    updateRouteProgress();
+                }
+            }
+        }
+
+        function startVehicleMovement(vehicleId, routeId) {
+            const routeInfo = activeRoutes.get(routeId);
+            if (!routeInfo) return;
+
+            const route = routeInfo.route_data;
+            const waypoints = [
+                { lat: route.start_lat, lng: route.start_lng, name: 'Start' },
+                ...checkpoints,
+                { lat: route.end_lat, lng: route.end_lng, name: 'End' }
+            ];
+
+            let currentWaypointIndex = 0;
+            let currentPosition = waypoints[0];
+            
+            // Update vehicle marker position
+            updateVehicleMarker(vehicleId, currentPosition.lat, currentPosition.lng, 'moving');
+
+            // Store movement data
+            vehicleRoutes.set(vehicleId, {
+                routeId: routeId,
+                waypoints: waypoints,
+                currentIndex: 0,
+                isMoving: true
+            });
+
+            // Start movement simulation
+            const movementInterval = setInterval(async () => {
+                const vehicleRoute = vehicleRoutes.get(vehicleId);
+                if (!vehicleRoute || !vehicleRoute.isMoving) {
+                    clearInterval(movementInterval);
+                    return;
+                }
+
+                const targetWaypoint = vehicleRoute.waypoints[vehicleRoute.currentIndex + 1];
+                if (!targetWaypoint) {
+                    // Route completed
+                    clearInterval(movementInterval);
+                    vehicleRoute.isMoving = false;
+                    updateVehicleMarker(vehicleId, currentPosition.lat, currentPosition.lng, 'completed');
+                    showToast(`Vehicle ${vehicleId} completed route`, 'success');
+                    addSecurityEvent(`Vehicle ${vehicleId} completed route successfully`, 'LOW');
+                    return;
+                }
+
+                // Move towards target
+                const progress = 0.1; // Movement speed
+                const newLat = currentPosition.lat + (targetWaypoint.lat - currentPosition.lat) * progress;
+                const newLng = currentPosition.lng + (targetWaypoint.lng - currentPosition.lng) * progress;
+
+                currentPosition = { lat: newLat, lng: newLng };
+                updateVehicleMarker(vehicleId, newLat, newLng, 'moving');
+
+                // Check if reached waypoint
+                const distance = Math.sqrt(
+                    Math.pow(targetWaypoint.lat - newLat, 2) + 
+                    Math.pow(targetWaypoint.lng - newLng, 2)
+                );
+
+                if (distance < 0.001) {
+                    // Reached waypoint
+                    vehicleRoute.currentIndex++;
+                    currentPosition = targetWaypoint;
+
+                    // Check if it's a checkpoint
+                    if (vehicleRoute.currentIndex > 0 && vehicleRoute.currentIndex < waypoints.length - 1) {
+                        const checkpoint = checkpoints[vehicleRoute.currentIndex - 1];
+                        if (checkpoint) {
+                            await handleCheckpointArrival(vehicleId, routeId, checkpoint);
+                        }
+                    }
+                }
+
+                // Update backend
+                await updateVehiclePosition(vehicleId, routeId, newLat, newLng);
+                updateRouteProgress();
+            }, 1000);
+
+            movementIntervals.set(vehicleId, movementInterval);
+        }
+
+        async function handleCheckpointArrival(vehicleId, routeId, checkpoint) {
+            const vehicleRoute = vehicleRoutes.get(vehicleId);
+            if (!vehicleRoute) return;
+
+            if (!checkpoint.is_authorized) {
+                // Security violation
+                vehicleRoute.isMoving = false;
+                updateVehicleMarker(vehicleId, checkpoint.lat, checkpoint.lng, 'locked');
+                
+                showSecurityAlert(
+                    `Vehicle ${vehicleId} stopped at unauthorized checkpoint "${checkpoint.name}". Vehicle has been locked for security.`
+                );
+
+                // Clear movement interval
+                const interval = movementIntervals.get(vehicleId);
+                if (interval) {
+                    clearInterval(interval);
+                    movementIntervals.delete(vehicleId);
+                }
+
+                addSecurityEvent(`VIOLATION: Vehicle ${vehicleId} at unauthorized checkpoint`, 'HIGH');
+                return;
+            }
+
+            // Authorized stop
+            vehicleRoute.isMoving = false;
+            updateVehicleMarker(vehicleId, checkpoint.lat, checkpoint.lng, 'checkpoint');
+            
+            showToast(`Vehicle ${vehicleId} at checkpoint "${checkpoint.name}"`, 'success');
+            addSecurityEvent(`Vehicle ${vehicleId} stopped at authorized checkpoint "${checkpoint.name}"`, 'LOW');
+
+            // Resume after stop duration (shortened for demo)
+            setTimeout(() => {
+                if (vehicleRoute) {
+                    vehicleRoute.isMoving = true;
+                    updateVehicleMarker(vehicleId, checkpoint.lat, checkpoint.lng, 'moving');
+                    showToast(`Vehicle ${vehicleId} resuming route`, 'success');
+                }
+            }, 3000); // 3 seconds for demo instead of minutes
+        }
+
+        async function updateVehiclePosition(vehicleId, routeId, lat, lng, checkpointId = null) {
+            try {
+                const movement = {
+                    vehicle_id: vehicleId,
+                    route_id: routeId,
+                    current_lat: lat,
+                    current_lng: lng,
+                    checkpoint_id: checkpointId,
+                    is_authorized_stop: true
+                };
+
+                const response = await fetch(`${API_BASE}/vehicles/movement/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(movement)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.vehicle_locked) {
+                        handleVehicleLock(vehicleId, result.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Position update failed:', error);
+                // Continue in demo mode
+            }
+        }
+
+        function updateVehicleMarker(vehicleId, lat, lng, status) {
+            let marker = vehicleMarkers.get(vehicleId);
+            
+            const getMarkerColor = (status) => {
+                switch (status) {
+                    case 'moving': return '#ffb800';
+                    case 'checkpoint': return '#00ff88';
+                    case 'locked': return '#ff4757';
+                    case 'completed': return '#667eea';
+                    default: return '#00d4ff';
+                }
+            };
+
+            const markerHtml = `
+                <div class="custom-marker ${status === 'moving' ? 'moving-vehicle' : ''}" style="
+                    width: 24px; 
+                    height: 24px; 
+                    background: radial-gradient(circle, ${getMarkerColor(status)} 0%, ${getMarkerColor(status)}aa 100%); 
+                    border-radius: 50%; 
+                    border: 3px solid white;
+                    box-shadow: 0 0 20px ${getMarkerColor(status)}80;
+                "></div>
+            `;
+
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+                marker.setIcon(L.divIcon({
+                    html: markerHtml,
+                    className: 'custom-vehicle-marker',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                }));
+            } else {
+                marker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        html: markerHtml,
+                        className: 'custom-vehicle-marker',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(map);
+
+                vehicleMarkers.set(vehicleId, marker);
+            }
+
+            marker.bindPopup(`
+                <div style="color: black;">
+                    <strong>Vehicle: ${vehicleId}</strong><br>
+                    Status: ${status.toUpperCase()}<br>
+                    Position: ${lat.toFixed(4)}, ${lng.toFixed(4)}
+                </div>
+            `);
+
+            updateVehicleStatusDisplay();
+        }
+
+        function handleVehicleLock(vehicleId, message) {
+            const vehicleRoute = vehicleRoutes.get(vehicleId);
+            if (vehicleRoute) {
+                vehicleRoute.isMoving = false;
+            }
+
+            const interval = movementIntervals.get(vehicleId);
+            if (interval) {
+                clearInterval(interval);
+                movementIntervals.delete(vehicleId);
+            }
+
+            showSecurityAlert(message);
+            addSecurityEvent(message, 'HIGH');
+        }
+
+        function clearRoute() {
+            if (routeControl) {
+                map.removeControl(routeControl);
+                routeControl = null;
+            }
+            
+            checkpoints = [];
+            clickedPoints = [];
+            currentRoute = null;
+            
+            updateCheckpointsList();
+            
+            // Clear map markers except vehicles
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker && layer.options.checkpointId) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Clear route planning form
+            document.getElementById('start-lat').value = '';
+            document.getElementById('start-lng').value = '';
+            document.getElementById('end-lat').value = '';
+            document.getElementById('end-lng').value = '';
+            document.getElementById('route-vehicle-select').value = '';
+            
+            document.getElementById('start-route-btn').disabled = true;
+            showToast('Route cleared', 'success');
+        }
+
+        // Emergency Functions
+        async function unlockVehicle() {
+            const vehicleId = document.getElementById('emergency-vehicle-id').value;
+            const authCode = document.getElementById('auth-code').value;
+
+            if (!vehicleId || !authCode) {
+                showToast('Please enter vehicle ID and authorization code', 'error');
+                return;
+            }
+
+            if (authCode !== 'QUANTUM_UNLOCK_2024') {
+                showToast('Invalid authorization code', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/vehicles/${vehicleId}/unlock?route_id=${currentRoute}&authorization_code=${authCode}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const vehicleRoute = vehicleRoutes.get(vehicleId);
+                    if (vehicleRoute) {
+                        vehicleRoute.isMoving = true;
+                        const currentWaypoint = vehicleRoute.waypoints[vehicleRoute.currentIndex];
+                        updateVehicleMarker(vehicleId, currentWaypoint.lat, currentWaypoint.lng, 'moving');
+                    }
+                    
+                    showToast(`Vehicle ${vehicleId} unlocked successfully`, 'success');
+                    addSecurityEvent(`Vehicle ${vehicleId} unlocked by administrator`, 'MEDIUM');
+                    
+                    // Clear form
+                    document.getElementById('emergency-vehicle-id').value = '';
+                    document.getElementById('auth-code').value = '';
+                } else {
+                    throw new Error('Invalid authorization code');
+                }
+            } catch (error) {
+                console.error('Unlock failed:', error);
+                const shouldFallback = handleApiError(error, 'Failed to unlock vehicle');
+                
+                if (shouldFallback) {
+                    const vehicleRoute = vehicleRoutes.get(vehicleId);
+                    if (vehicleRoute) {
+                        vehicleRoute.isMoving = true;
+                        const currentWaypoint = vehicleRoute.waypoints[vehicleRoute.currentIndex];
+                        updateVehicleMarker(vehicleId, currentWaypoint.lat, currentWaypoint.lng, 'moving');
+                    }
+                    
+                    showToast(`Demo: Vehicle ${vehicleId} unlocked`, 'success');
+                    addSecurityEvent(`Vehicle ${vehicleId} unlocked by administrator`, 'MEDIUM');
+                    
+                    // Clear form
+                    document.getElementById('emergency-vehicle-id').value = '';
+                    document.getElementById('auth-code').value = '';
+                }
+            }
+        }
+
+        function lockAllVehicles() {
+            if (!confirm('Lock all vehicles? This will stop all active routes.')) {
+                return;
+            }
+
+            vehicleMarkers.forEach((marker, vehicleId) => {
+                const vehicleRoute = vehicleRoutes.get(vehicleId);
+                if (vehicleRoute) {
+                    vehicleRoute.isMoving = false;
+                }
+
+                const interval = movementIntervals.get(vehicleId);
+                if (interval) {
+                    clearInterval(interval);
+                    movementIntervals.delete(vehicleId);
+                }
+
+                const pos = marker.getLatLng();
+                updateVehicleMarker(vehicleId, pos.lat, pos.lng, 'locked');
+            });
+
+            showToast('All vehicles locked', 'error');
+            addSecurityEvent('Emergency lockdown - all vehicles secured', 'HIGH');
+        }
+
+        function emergencyStop() {
+            if (!confirm('Emergency stop all vehicles? This action cannot be undone.')) {
+                return;
+            }
+
+            // Stop all vehicle movements
+            movementIntervals.forEach((interval, vehicleId) => {
+                clearInterval(interval);
+                const vehicleRoute = vehicleRoutes.get(vehicleId);
+                if (vehicleRoute) {
+                    vehicleRoute.isMoving = false;
+                }
+            });
+            movementIntervals.clear();
+
+            // Update all vehicle markers to stopped state
+            vehicleMarkers.forEach((marker, vehicleId) => {
+                const pos = marker.getLatLng();
+                updateVehicleMarker(vehicleId, pos.lat, pos.lng, 'locked');
+            });
+
+            showSecurityAlert('EMERGENCY STOP ACTIVATED - All vehicles halted');
+            addSecurityEvent('EMERGENCY STOP - All vehicle operations halted', 'HIGH');
+            
+            // Change system status
+            document.getElementById('system-status-dot').className = 'status-dot status-locked';
+            document.getElementById('system-status-text').textContent = 'Emergency Stop Active';
+        }
+
+        // UI Update Functions
+        function updateRouteProgress() {
+            const container = document.getElementById('route-progress');
+            container.innerHTML = '';
+
+            if (!currentRoute || !activeRoutes.has(currentRoute)) {
+                container.innerHTML = '<div style="text-align: center; color: var(--secondary-text); padding: 20px;">No active route</div>';
+                return;
+            }
+
+            const routeInfo = activeRoutes.get(currentRoute);
+            const vehicleRoute = vehicleRoutes.get(routeInfo.vehicle_id);
+
+            if (!vehicleRoute) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: var(--secondary-text); padding: 20px;">
+                        Route planned for ${routeInfo.vehicle_id}<br>
+                        <button class="btn btn-sm" onclick="startSelectedRoute()">Start Route</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const progress = (vehicleRoute.currentIndex / (vehicleRoute.waypoints.length - 1)) * 100;
+            const currentWaypoint = vehicleRoute.waypoints[vehicleRoute.currentIndex];
+            const nextWaypoint = vehicleRoute.waypoints[vehicleRoute.currentIndex + 1];
+
+            container.innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <div style="font-weight: 600; margin-bottom: 5px;">Vehicle: ${routeInfo.vehicle_id}</div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; margin-bottom: 10px;">
+                        <div style="background: var(--gradient-quantum); height: 6px; width: ${progress}%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="font-size: 12px; color: var(--secondary-text);">
+                        Progress: ${progress.toFixed(1)}% (${vehicleRoute.currentIndex}/${vehicleRoute.waypoints.length - 1})
+                    </div>
+                </div>
+                
+                <div style="font-size: 11px;">
+                    <div style="margin-bottom: 8px;">
+                        <strong>Current:</strong> ${currentWaypoint?.name || 'Waypoint ' + vehicleRoute.currentIndex}
+                    </div>
+                    ${nextWaypoint ? `<div style="margin-bottom: 8px;"><strong>Next:</strong> ${nextWaypoint.name || 'Waypoint ' + (vehicleRoute.currentIndex + 1)}</div>` : ''}
+                    <div>
+                        <strong>Status:</strong> 
+                        <span style="color: ${vehicleRoute.isMoving ? 'var(--warning-color)' : 'var(--success-color)'};">
+                            ${vehicleRoute.isMoving ? 'Moving' : 'Stopped'}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateVehicleStatusDisplay() {
+            const container = document.getElementById('vehicle-status-list');
+            container.innerHTML = '';
+
+            if (vehicleMarkers.size === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--secondary-text); padding: 10px;">No vehicles available</div>';
+                return;
+            }
+
+            vehicleMarkers.forEach((marker, vehicleId) => {
+                const vehicleRoute = vehicleRoutes.get(vehicleId);
+                let status = 'idle';
+                
+                if (vehicleRoute) {
+                    if (vehicleRoute.isMoving) status = 'moving';
+                    else status = 'stopped';
+                }
+                
+                const pos = marker.getLatLng();
+
+                const item = document.createElement('div');
+                item.className = 'vehicle-status';
+                item.innerHTML = `
+                    <div class="status-indicator ${getStatusClass(status)}"></div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; font-size: 12px;">${vehicleId}</div>
+                        <div style="font-size: 10px; color: var(--secondary-text);">
+                            ${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}
+                        </div>
+                        <div style="font-size: 9px; color: var(--secondary-text);">
+                            Status: ${status.toUpperCase()}
+                        </div>
+                    </div>
+                    <button class="btn btn-sm" style="padding: 4px 8px; font-size: 9px;" onclick="centerOnVehicle('${vehicleId}')">
+                        Track
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'moving': return 'status-moving';
+                case 'completed': return 'status-secure';
+                case 'locked': return 'status-locked';
+                case 'stopped': return 'status-secure';
+                default: return 'status-secure';
+            }
+        }
+
+        function centerOnVehicle(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                map.setView(marker.getLatLng(), 15);
+                marker.openPopup();
+                showToast(`Tracking vehicle ${vehicleId}`, 'success');
+            }
+        }
+
+        // Security Functions
+        function showSecurityAlert(message) {
+            const alert = document.getElementById('security-alert');
+            document.getElementById('security-alert-message').textContent = message;
+            alert.style.display = 'block';
+        }
+
+        function closeSecurityAlert() {
+            document.getElementById('security-alert').style.display = 'none';
+        }
+
+        function addSecurityEvent(message, severity) {
+            const container = document.getElementById('security-events');
+            const time = new Date().toLocaleTimeString();
+            
+            const event = document.createElement('div');
+            event.className = `event-item ${severity.toLowerCase()}`;
+            event.innerHTML = `
+                <div class="event-time">${time}</div>
+                <div class="event-text">${message}</div>
+            `;
+            
+            container.insertBefore(event, container.firstChild);
+            
+            // Keep only last 20 events
+            while (container.children.length > 20) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Map Control Functions
+        function toggleMapLayer(layerType, event) {
+            // Remove all layers first
+            if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
+            if (map.hasLayer(streetLayer)) map.removeLayer(streetLayer);
+            if (map.hasLayer(hybridLayer)) map.removeLayer(hybridLayer);
+
+            // Update active button
+            document.querySelectorAll('.map-control-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Add selected layer
+            switch(layerType) {
+                case 'satellite':
+                    map.addLayer(satelliteLayer);
+                    currentMapLayer = 'satellite';
+                    break;
+                case 'street':
+                    map.addLayer(streetLayer);
+                    currentMapLayer = 'street';
+                    break;
+                case 'hybrid':
+                    map.addLayer(satelliteLayer);
+                    map.addLayer(hybridLayer);
+                    currentMapLayer = 'hybrid';
+                    break;
+            }
+
+            // Update active button
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            showToast(`${layerType} view activated`, 'success');
+        }
+
+        function toggleMapView() {
+            const container = document.querySelector('.main-container');
+            const sidebar = document.querySelector('.sidebar');
+            const controlPanel = document.querySelector('.control-panel');
+            const mapContainer = document.querySelector('.map-container');
+            const button = document.querySelector('[onclick="toggleMapView()"]');
+            
+            if (!mapExpanded) {
+                container.classList.add('map-only');
+                sidebar.classList.add('hidden');
+                controlPanel.classList.add('hidden');
+                mapContainer.classList.add('full-width');
+                mapExpanded = true;
+                showToast('Big Map Mode - Maximum visibility', 'success');
+                button.textContent = 'Normal View';
+            } else {
+                container.classList.remove('map-only');
+                sidebar.classList.remove('hidden');
+                controlPanel.classList.remove('hidden');
+                mapContainer.classList.remove('full-width');
+                mapExpanded = false;
+                showToast('Normal view restored', 'success');
+                button.textContent = 'Big Map';
+            }
+            
+            setTimeout(() => {
+                map.invalidateSize();
+                if (vehicleMarkers.size > 0) {
+                    centerOnVehicles();
+                }
+            }, 400);
+        }
+
+        function centerOnVehicles() {
+            if (vehicleMarkers.size > 0) {
+                const group = new L.featureGroup(Array.from(vehicleMarkers.values()));
+                map.fitBounds(group.getBounds().pad(0.1));
+                showToast(`Centered on ${vehicleMarkers.size} vehicles`, 'success');
+            } else {
+                map.setView([40.7128, -74.0060], 10);
+                showToast('No vehicles to center on', 'error');
+            }
+        }
+
+        function toggleHeatmap() {
+            heatmapVisible = !heatmapVisible;
+            
+            if (heatmapVisible) {
+                vehicleMarkers.forEach((marker, vehicleId) => {
+                    const pos = marker.getLatLng();
+                    L.circle(pos, {
+                        radius: 200,
+                        color: '#ff4757',
+                        fillColor: '#ff4757',
+                        fillOpacity: 0.3,
+                        opacity: 0.6,
+                        className: 'heatmap-circle'
+                    }).addTo(map);
+                });
+                
+                event.target.classList.add('active');
+                showToast('Heatmap enabled', 'success');
+            } else {
+                map.eachLayer(function(layer) {
+                    if (layer.options && layer.options.className === 'heatmap-circle') {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                event.target.classList.remove('active');
+                showToast('Heatmap disabled', 'success');
+            }
+        }
+
+        function zoomIn() {
+            map.zoomIn();
+            showToast('Zooming in...', 'success');
+        }
+
+        function zoomOut() {
+            map.zoomOut();
+            showToast('Zooming out...', 'success');
+        }
+
+        function resetZoom() {
+            map.setView([40.7128, -74.0060], 10);
+            showToast('View reset to default', 'success');
+        }
+
+        function updateMapOverlay() {
+            const zoom = map.getZoom();
+            const center = map.getCenter();
+            const overlay = document.querySelector('.map-overlay');
+            
+            if (overlay) {
+                const coordsText = `Lat: ${center.lat.toFixed(4)}, Lng: ${center.lng.toFixed(4)}, Zoom: ${zoom}`;
+                
+                if (routeMode) {
+                    overlay.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 5px;" id="map-mode">Route Planning Mode</div>
+                        <div style="font-size: 12px; color: var(--secondary-text);" id="map-instruction">
+                            Click to set route points
+                        </div>
+                        <div style="font-size: 10px; color: var(--secondary-text); margin-top: 5px;">
+                            ${coordsText}
+                        </div>
+                    `;
+                } else {
+                    overlay.innerHTML = `
+                        <div style="font-weight: 600; margin-bottom: 5px;" id="map-mode">Live GPS Tracking</div>
+                        <div style="font-size: 12px; color: var(--secondary-text);" id="map-instruction">
+                            Active Vehicles: <span id="active-vehicles">${vehicleMarkers.size}</span>
+                        </div>
+                        <div style="font-size: 10px; color: var(--secondary-text); margin-top: 5px;">
+                            ${coordsText}
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Navigation Functions
+        function switchView(view, event) {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
+            // Add active class to clicked item
+            if (event && event.target) {
+                event.target.closest('.nav-item').classList.add('active');
+            }
+
+            currentView = view;
+
+            // Update view-specific content
+            switch (view) {
+                case 'overview':
+                    showToast('Overview mode activated', 'success');
+                    break;
+                case 'gps':
+                    showToast('GPS tracking mode activated', 'success');
+                    focusOnVehicles();
+                    break;
+                case 'routing':
+                    showToast('Vehicle routing mode activated', 'success');
+                    if (!routeMode) {
+                        toggleRouteMode();
+                    }
+                    break;
+                case 'quantum':
+                    showToast('Quantum security mode activated', 'success');
+                    updateQuantumVisualization();
+                    break;
+                case 'security':
+                    showToast('Security monitoring mode activated', 'success');
+                    loadSecurityEvents();
+                    break;
+            }
+        }
+
+        // Data Loading and Updates
+        async function loadInitialData() {
+            try {
+                await Promise.all([
+                    loadSystemStatus(),
+                    loadSecurityEvents(),
+                    loadVehicleData(),
+                    loadQuantumTokens(),
+                    loadActiveRoutes()
+                ]);
+            } catch (error) {
+                console.error('Failed to load initial data:', error);
+                showToast('Failed to load system data - using demo mode', 'error');
+            }
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/system/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSystemMetrics(data);
+                } else {
+                    throw new Error('Failed to load system status');
+                }
+            } catch (error) {
+                const shouldFallback = handleApiError(error, 'Failed to load system status');
+                if (shouldFallback) {
+                    updateSystemMetrics({
+                        components: {
+                            active_sessions: Math.floor(Math.random() * 10) + 5
+                        }
+                    });
+                }
+            }
+        }
+
+        async function loadSecurityEvents() {
+            try {
+                const response = await fetch(`${API_BASE}/security/events?hours=24`, {
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateSecurityEvents(data.events || []);
+                } else if (response.status === 403) {
+                    console.warn('Insufficient permissions for security events');
+                    const demoEvents = [{
+                        timestamp: new Date().toISOString(),
+                        event_type: 'PERMISSION_LIMITED',
+                        severity: 'low',
+                        details: { reason: 'Security events require elevated permissions' }
+                    }];
+                    updateSecurityEvents(demoEvents);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Security events error:', error);
+                const shouldFallback = handleApiError(error, 'Failed to load security events');
+                
+                if (shouldFallback) {
+                    const fallbackEvents = [
+                        {
+                            timestamp: new Date().toISOString(),
+                            event_type: 'SYSTEM_OPERATIONAL',
+                            severity: 'low',
+                            details: { reason: 'Quantum security system active' }
+                        },
+                        {
+                            timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
+                            event_type: 'GPS_SYNC',
+                            severity: 'low',
+                            details: { reason: 'Vehicle tracking synchronized' }
+                        }
+                    ];
+                    updateSecurityEvents(fallbackEvents);
+                }
+            }
+        }
+
+        async function loadVehicleData() {
+            try {
+                const response = await fetch(`${API_BASE}/vehicles/active`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const vehicles = data.active_vehicles || [];
+                    
+                    vehicleMarkers.clear();
+                    
+                    vehicles.forEach(vehicle => {
+                        addCustomMarker([vehicle.lat, vehicle.lng], {
+                            vehicle_id: vehicle.vehicle_id,
+                            status: vehicle.status,
+                            timestamp: vehicle.last_update
+                        });
+                    });
+
+                    document.getElementById('active-vehicles').textContent = vehicles.length;
+                } else {
+                    throw new Error('Failed to load vehicles');
+                }
+            } catch (error) {
+                console.error('Failed to load vehicle data:', error);
+                const shouldFallback = handleApiError(error, 'Failed to load vehicles');
+                
+                if (shouldFallback) {
+                    const simulatedVehicles = [
+                        { vehicle_id: 'QV001', lat: 40.7128, lng: -74.0060, status: 'Active' },
+                        { vehicle_id: 'QV002', lat: 40.7589, lng: -73.9851, status: 'Secure' },
+                        { vehicle_id: 'QV003', lat: 40.6782, lng: -73.9442, status: 'Transit' },
+                        { vehicle_id: 'QV004', lat: 40.7831, lng: -73.9712, status: 'Patrol' },
+                        { vehicle_id: 'QV005', lat: 40.7282, lng: -73.7949, status: 'Standby' }
+                    ];
+
+                    vehicleMarkers.clear();
+                    simulatedVehicles.forEach(vehicle => {
+                        addCustomMarker([vehicle.lat, vehicle.lng], vehicle);
+                    });
+
+                    document.getElementById('active-vehicles').textContent = simulatedVehicles.length;
+                }
+            }
+        }
+
+        async function loadQuantumTokens() {
+            try {
+                const response = await fetch(`${API_BASE}/quantum/tokens`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    quantumTokens.clear();
+                    data.tokens?.forEach(token => {
+                        quantumTokens.set(token.token_id, token);
+                    });
+                    
+                    // Update system metrics if provided
+                    if (data.system_metrics) {
+                        updateSystemMetrics({ components: data.system_metrics });
+                    } else {
+                        updateSystemMetrics({ components: { active_sessions: 0 } });
+                    }
+                } else {
+                    throw new Error('Failed to load quantum tokens');
+                }
+            } catch (error) {
+                const shouldFallback = handleApiError(error, 'Failed to load quantum tokens');
+                if (shouldFallback) {
+                    quantumTokens.clear();
+                    updateSystemMetrics({ components: { active_sessions: 0 } });
+                }
+            }
+        }
+
+        async function loadActiveRoutes() {
+            try {
+                const response = await fetch(`${API_BASE}/vehicles/routes/active`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const routes = data.active_routes || [];
+                    
+                    routes.forEach(route => {
+                        activeRoutes.set(route.route_id, {
+                            vehicle_id: route.vehicle_id,
+                            route_data: route,
+                            status: route.status
+                        });
+                    });
+                    
+                    updateRouteProgress();
+                }
+            } catch (error) {
+                console.error('Failed to load active routes:', error);
+            }
+        }
+
+        // Login Functions
+        function showLogin() {
+            const existingModal = document.getElementById('login-modal-overlay');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'login-modal-overlay';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.background = 'linear-gradient(135deg, #0a0a0b 0%, #161618 100%)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = '10000';
+
+            modal.innerHTML = `
+                <div class="holographic" style="
+                    background: var(--secondary-bg);
+                    border: 1px solid var(--border-color);
+                    border-radius: 15px;
+                    padding: 40px;
+                    max-width: 400px;
+                    width: 90%;
+                    text-align: center;
+                    position: relative;
+                    backdrop-filter: blur(20px);
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                ">
+                    <h1 style="
+                        font-size: 28px;
+                        margin-bottom: 10px;
+                        background: var(--gradient-quantum);
+                        -webkit-background-clip: text;
+                        -webkit-text-fill-color: transparent;
+                        background-clip: text;
+                        animation: titleGlow 3s ease-in-out infinite alternate;
+                    ">Quantum Security</h1>
+                    <p style="color: var(--secondary-text); margin-bottom: 30px;">
+                        Access the command center with your credentials
+                    </p>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="login-username" placeholder="Username" style="
+                            width: 100%;
+                            padding: 15px;
+                            background: rgba(255, 255, 255, 0.05);
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            color: var(--primary-text);
+                            font-size: 14px;
+                            margin-bottom: 15px;
+                            transition: all 0.3s ease;
+                        ">
+                        <input type="password" id="login-password" placeholder="Password" style="
+                            width: 100%;
+                            padding: 15px;
+                            background: rgba(255, 255, 255, 0.05);
+                            border: 1px solid var(--border-color);
+                            border-radius: 8px;
+                            color: var(--primary-text);
+                            font-size: 14px;
+                            transition: all 0.3s ease;
+                        ">
+                    </div>
+                    
+                    <button id="login-btn" onclick="performLogin()" class="btn interactive-glow" style="
+                        width: 100%;
+                        padding: 15px;
+                        background: var(--gradient-quantum);
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        margin-bottom: 20px;
+                    ">Access System</button>
+                    
+                    <div style="font-size: 12px; color: var(--secondary-text);">
+                        Demo credentials:<br>
+                        admin / admin123<br>
+                        operator / operator123
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        async function performLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtn = document.getElementById('login-btn');
+
+            if (!username || !password) {
+                showToast('Please enter username and password', 'error');
+                return;
+            }
+
+            const originalText = loginBtn.textContent;
+            loginBtn.textContent = 'Connecting...';
+            loginBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setStoredToken(data.access_token);
+                    authToken = data.access_token;
+                    document.getElementById('login-modal-overlay').remove();
+                    showToast('Login successful!', 'success');
+                    location.reload();
+                } else {
+                    throw new Error(`Login failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                if ((username === 'admin' && password === 'admin123') || 
+                    (username === 'operator' && password === 'operator123')) {
+                    setStoredToken('demo_token');
+                    authToken = 'demo_token';
+                    document.getElementById('login-modal-overlay').remove();
+                    showToast('Backend unavailable - using demo mode', 'success');
+                    location.reload();
+                } else {
+                    showToast('Invalid credentials. Try: admin/admin123', 'error');
+                }
+            } finally {
+                loginBtn.textContent = originalText;
+                loginBtn.disabled = false;
+            }
+        }
+
+        // Action Functions
+        async function generateQuantumToken() {
+            const deviceId = document.getElementById('vehicle-id').value || `QV${String(Date.now()).slice(-3)}`;
+            
+            try {
+                showToast('Generating quantum token...', 'success');
+                
+                const response = await fetch(`${API_BASE}/quantum/generate`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ device_id: deviceId })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    quantumTokens.set(data.quantum_token.token_id, data.quantum_token);
+                    updateSystemMetrics({ components: { active_sessions: 0 } });
+                    showToast(`Quantum token generated for ${deviceId}`, 'success');
+                    createQuantumBurst();
+                } else {
+                    throw new Error('Failed to generate token');
+                }
+            } catch (error) {
+                console.error('Token generation failed:', error);
+                const shouldFallback = handleApiError(error, 'Failed to generate quantum token');
+                
+                if (shouldFallback) {
+                    const tokenId = `QT${Date.now().toString().slice(-6)}`;
+                    quantumTokens.set(tokenId, {
+                        token_id: tokenId,
+                        device_id: deviceId,
+                        status: 'active',
+                        theta: Math.floor(Math.random() * 360),
+                        phi: Math.floor(Math.random() * 180)
+                    });
+                    updateSystemMetrics({ components: { active_sessions: 0 } });
+                    showToast(`Demo token generated for ${deviceId}`, 'success');
+                    createQuantumBurst();
+                }
+            }
+        }
+
+        async function executeVehicleAction() {
+            const vehicleId = document.getElementById('vehicle-id').value;
+            const action = document.getElementById('vehicle-action').value;
+            
+            if (!vehicleId) {
+                showToast('Please enter a vehicle ID', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/vehicles/${vehicleId}/action`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action: action })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showToast(data.message, 'success');
+                    
+                    switch (action) {
+                        case 'track':
+                            trackVehicle(vehicleId);
+                            break;
+                        case 'unlock':
+                            unlockVehicleStandard(vehicleId);
+                            break;
+                        case 'lock':
+                            lockVehicle(vehicleId);
+                            break;
+                    }
+                } else {
+                    throw new Error('Action failed');
+                }
+            } catch (error) {
+                console.error('Vehicle action failed:', error);
+                const shouldFallback = handleApiError(error, `Failed to execute ${action} for ${vehicleId}`);
+                
+                if (shouldFallback) {
+                    showToast(`Demo mode: ${action} executed for ${vehicleId}`, 'success');
+                    switch (action) {
+                        case 'track':
+                            trackVehicle(vehicleId);
+                            break;
+                        case 'lock':
+                            lockVehicle(vehicleId);
+                            break;
+                        case 'unlock':
+                            unlockVehicleStandard(vehicleId);
+                            break;
+                    }
+                }
+            }
+        }
+
+        async function validateSession() {
+            if (!authToken) return false;
+            
+            try {
+                const response = await fetch(`${API_BASE}/system/status`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.status === 401) {
+                    removeStoredToken();
+                    authToken = null;
+                    showLogin();
+                    return false;
+                }
+                
+                return response.ok;
+            } catch (error) {
+                console.warn('Session validation failed:', error);
+                return true; // Continue in offline mode
+            }
+        }
+
+        async function refreshData() {
+            document.getElementById('metrics-loading').style.display = 'inline-block';
+            showToast('Refreshing system data...', 'success');
+            
+            try {
+                await loadInitialData();
+                showToast('Data refreshed successfully', 'success');
+            } catch (error) {
+                showToast('Failed to refresh data - using demo mode', 'error');
+            } finally {
+                document.getElementById('metrics-loading').style.display = 'none';
+            }
+        }
+
+        function emergencyLockdown() {
+            if (confirm('Are you sure you want to initiate emergency lockdown? This will secure all connected vehicles.')) {
+                showToast('Emergency lockdown initiated', 'error');
+                
+                document.body.style.filter = 'hue-rotate(180deg)';
+                setTimeout(() => {
+                    document.body.style.filter = '';
+                }, 3000);
+                
+                vehicleMarkers.forEach((marker, vehicleId) => {
+                    lockVehicle(vehicleId);
+                });
+            }
+        }
+
+        // Vehicle Functions
+        function trackVehicle(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                map.setView(marker.getLatLng(), 15);
+                marker.openPopup();
+                showToast(`Tracking vehicle ${vehicleId}`, 'success');
+            } else {
+                showToast(`Vehicle ${vehicleId} not found`, 'error');
+            }
+        }
+
+        function lockVehicle(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                const pos = marker.getLatLng();
+                updateVehicleMarker(vehicleId, pos.lat, pos.lng, 'locked');
+                showToast(`Vehicle ${vehicleId} secured`, 'success');
+                addSecurityEvent(`Vehicle ${vehicleId} secured via security protocol`, 'HIGH');
+            }
+        }
+
+        function unlockVehicleStandard(vehicleId) {
+            const marker = vehicleMarkers.get(vehicleId);
+            if (marker) {
+                const pos = marker.getLatLng();
+                updateVehicleMarker(vehicleId, pos.lat, pos.lng, 'idle');
+                showToast(`Vehicle ${vehicleId} unlocked`, 'success');
+                addSecurityEvent(`Vehicle ${vehicleId} unlocked via standard protocol`, 'MEDIUM');
+            }
+        }
+
+        // Map Functions
+        function addCustomMarker(latlng, data = {}) {
+            const customIcon = L.divIcon({
+                html: `
+                    <div class="custom-marker" style="
+                        width: 20px; 
+                        height: 20px; 
+                        background: radial-gradient(circle, #00d4ff 0%, #667eea 100%); 
+                        border-radius: 50%; 
+                        border: 2px solid white;
+                        box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+                    "></div>
+                `,
+                className: 'custom-marker',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
+            
+            const popupContent = `
+                <div style="background: #161618; color: white; padding: 15px; border-radius: 8px; min-width: 200px; border: 1px solid var(--border-color);">
+                    <h4 style="margin: 0 0 10px 0; color: #00d4ff; font-size: 14px;">Vehicle: ${data.vehicle_id || 'Unknown'}</h4>
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Status:</strong> ${data.status || 'Active'}</p>
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Last Update:</strong> ${data.timestamp || new Date().toLocaleTimeString()}</p>
+                    <p style="margin: 5px 0; font-size: 12px;"><strong>Security Level:</strong> Quantum Secured</p>
+                    <div style="margin-top: 15px; display: flex; gap: 8px;">
+                        <button onclick="trackVehicle('${data.vehicle_id}')" class="btn interactive-glow" style="
+                            background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+                            color: white;
+                            border: none;
+                            padding: 6px 12px;
+                            border-radius: 4px;
+                            font-size: 11px;
+                            cursor: pointer;
+                            flex: 1;
+                        ">Track</button>
+                        <button onclick="lockVehicle('${data.vehicle_id}')" class="btn interactive-glow" style="
+                            background: linear-gradient(135deg, #ff4757 0%, #ff6b7d 100%);
+                            color: white;
+                            border: none;
+                            padding: 6px 12px;
+                            border-radius: 4px;
+                            font-size: 11px;
+                            cursor: pointer;
+                            flex: 1;
+                        ">Secure</button>
+                    </div>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent, {
+                className: 'custom-popup',
+                offset: [0, -10]
+            });
+
+            if (data.vehicle_id) {
+                vehicleMarkers.set(data.vehicle_id, marker);
+            }
+
+            return marker;
+        }
+
+        // Quantum Visualization
+        function initializeQuantumVisualization() {
+            const viz = document.getElementById('quantum-viz');
+            
+            for (let i = 0; i < 25; i++) {
+                createQuantumParticle(viz);
+            }
+        }
+
+        function createQuantumParticle(container) {
+            const particle = document.createElement('div');
+            particle.className = 'quantum-particle';
+            
+            // Random colors for quantum particles
+            const colors = ['#00d4ff', '#667eea', '#764ba2', '#00ff88', '#ffb800'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.background = randomColor;
+            
+            particle.style.left = Math.random() * (container.offsetWidth - 4) + 'px';
+            particle.style.top = Math.random() * (container.offsetHeight - 4) + 'px';
+            particle.style.animationDelay = Math.random() * 4 + 's';
+            particle.style.animationDuration = (3 + Math.random() * 4) + 's';
+            
+            container.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.remove();
+                    createQuantumParticle(container);
+                }
+            }, (3 + Math.random() * 4) * 1000);
+        }
+
+        function updateQuantumVisualization() {
+            const viz = document.getElementById('quantum-viz');
+            const existingParticles = viz.querySelectorAll('.quantum-particle');
+            
+            existingParticles.forEach(particle => {
+                particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+                particle.style.boxShadow = `0 0 ${5 + Math.random() * 15}px currentColor`;
+            });
+        }
+
+        function createQuantumBurst() {
+            const viz = document.getElementById('quantum-viz');
+            const burst = document.createElement('div');
+            burst.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 10px;
+                height: 10px;
+                background: radial-gradient(circle, #00d4ff, transparent);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 10;
+            `;
+            
+            // Add quantum burst animation
+            burst.style.animation = 'quantumBurst 1.5s ease-out forwards';
+            
+            viz.appendChild(burst);
+            
+            setTimeout(() => {
+                burst.remove();
+            }, 1500);
+        }
+
+        // Update Functions
+        function updateSystemMetrics(data) {
+            document.getElementById('metric-sessions').textContent = data.components?.active_sessions || '0';
+            document.getElementById('metric-tokens').textContent = quantumTokens.size;
+            document.getElementById('metric-gps').textContent = vehicleMarkers.size;
+            document.getElementById('metric-events').textContent = securityEvents.length;
+        }
+
+        function updateSecurityEvents(events) {
+            securityEvents = events;
+            const container = document.getElementById('security-events');
+            container.innerHTML = '';
+
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; color: var(--secondary-text); padding: 20px; border-radius: 8px; background: rgba(255, 255, 255, 0.02);">
+                        <div style="font-size: 14px; margin-bottom: 5px;">No Security Events</div>
+                        <div style="font-size: 11px;">System operating normally</div>
+                    </div>
+                `;
+                return;
+            }
+
+            events.slice(0, 10).forEach((event, index) => {
+                const eventElement = document.createElement('div');
+                eventElement.className = `event-item ${getSeverityClass(event.severity)}`;
+                eventElement.style.animationDelay = `${index * 0.1}s`;
+                
+                const time = new Date(event.timestamp).toLocaleTimeString();
+                eventElement.innerHTML = `
+                    <div class="event-time">${time}</div>
+                    <div class="event-text">${event.event_type}: ${event.details?.reason || 'Security event detected'}</div>
+                `;
+                
+                container.appendChild(eventElement);
+            });
+        }
+
+        function getSeverityClass(severity) {
+            switch (severity?.toLowerCase()) {
+                case 'high': return 'high';
+                case 'medium': return 'medium';
+                case 'low': return 'low';
+                default: return 'low';
+            }
+        }
+
+        // Utility Functions
+        function startDataUpdates() {
+            // Longer intervals for production efficiency
+            setInterval(async () => {
+                const sessionValid = await validateSession();
+                if (!sessionValid) return;
+                
+                await loadSystemStatus();
+                await loadSecurityEvents();
+                updateQuantumVisualization();
+                simulateVehicleMovement();
+                updateRouteProgress();
+            }, 45000); // 45 seconds instead of 30
+
+            // Security events less frequently
+            setInterval(async () => {
+                const sessionValid = await validateSession();
+                if (!sessionValid) return;
+                
+                await loadSecurityEvents();
+            }, 60000); // 1 minute
+
+            // Time-based updates
+            setInterval(() => {
+                updateTimeBasedElements();
+            }, 10000); // 10 seconds
+        }
+
+        function updateTimeBasedElements() {
+            const uptimeElement = document.getElementById('uptime');
+            if (uptimeElement) {
+                const uptime = (99.8 + Math.random() * 0.2).toFixed(1);
+                uptimeElement.textContent = uptime + '%';
+            }
+        }
+
+        function simulateVehicleMovement() {
+            // Controlled, minimal movement for production
+            vehicleMarkers.forEach((marker, vehicleId) => {
+                // Only move if no user interaction in last 30 seconds and not in route mode
+                const lastInteraction = sessionStorage.getItem('lastMapInteraction');
+                const now = Date.now();
+                
+                if (!lastInteraction || (now - parseInt(lastInteraction)) > 30000) {
+                    if (!routeMode && !vehicleRoutes.has(vehicleId)) {
+                        const currentPos = marker.getLatLng();
+                        // Very small, realistic movement (about 5 meters)
+                        const moveDistance = 0.00005;
+                        const newLat = currentPos.lat + (Math.random() - 0.5) * moveDistance;
+                        const newLng = currentPos.lng + (Math.random() - 0.5) * moveDistance;
+                        
+                        marker.setLatLng([newLat, newLng]);
+                    }
+                }
+            });
+            
+            updateMapOverlay();
+        }
+
+        // Track user map interactions
+        if (map) {
+            map.on('dragstart zoomstart', function() {
+                sessionStorage.setItem('lastMapInteraction', Date.now().toString());
+            });
+        }
+
+        function focusOnVehicles() {
+            if (vehicleMarkers.size > 0) {
+                const group = new L.featureGroup(Array.from(vehicleMarkers.values()));
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        function clearSecurityEvents() {
+            if (confirm('Clear all security events? This action cannot be undone.')) {
+                securityEvents = [];
+                updateSecurityEvents([]);
+                showToast('Security events cleared', 'success');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: ${type === 'success' ? 'var(--success-color)' : type === 'error' ? 'var(--danger-color)' : 'var(--warning-color)'}; animation: pulse 2s infinite;"></div>
+                    ${type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Warning'}
+                </div>
+                <div style="font-size: 12px; opacity: 0.9;">${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                showToast('Entered fullscreen mode', 'success');
+            } else {
+                document.exitFullscreen();
+                showToast('Exited fullscreen mode', 'success');
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                removeStoredToken();
+                showToast('Logged out successfully', 'success');
+                setTimeout(() => {
+                    showLogin();
+                }, 1000);
+            }
+        }
+
+        // Demo data simulation
+        setTimeout(() => {
+            if (authToken) {
+                // Generate security events less frequently to match backend pace
+                setInterval(() => {
+                    const events = [
+                        'Quantum token verified successfully',
+                        'Vehicle perimeter secured', 
+                        'GPS encryption updated',
+                        'System integrity check passed',
+                        'Route synchronization complete',
+                        'Checkpoint validation active'
+                    ];
+                    
+                    const randomEvent = events[Math.floor(Math.random() * events.length)];
+                    addSecurityEvent(randomEvent, 'LOW');
+                }, 45000); // Increased from 20000 to 45000 (45 seconds)
+            }
+        }, 3000);
+
+        // Add some enhanced interactivity
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                if (routeMode) {
+                    toggleRouteMode();
+                }
+            }
+        });
+
+        // Add smooth animations on load
+        window.addEventListener('load', function() {
+            document.querySelectorAll('.panel-card, .sidebar, .map-container').forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    el.style.transition = 'all 0.6s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+
+        // Initialize demo events for routing
+        setTimeout(() => {
+            addSecurityEvent('Quantum Cybersecurity System initialized', 'LOW');
+            addSecurityEvent('Vehicle tracking systems online', 'LOW');
+            addSecurityEvent('Route planning module active', 'LOW');
+            addSecurityEvent('Checkpoint security protocols loaded', 'LOW');
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -299,3 +299,220 @@ ConnectionResetError: [WinError 10054] An existing connection was forcibly close
 2025-09-22 23:11:37,822 - quantum_cybersecurity - INFO - Starting Quantum Cybersecurity System...
 2025-09-22 23:11:37,839 - quantum_cybersecurity - INFO - Demo devices initialized
 2025-09-22 23:11:37,839 - quantum_cybersecurity - INFO - System startup complete
+2025-09-23 11:45:00,316 - quantum_cybersecurity - INFO - PostQuantumCrypto initialized
+2025-09-23 11:45:00,318 - quantum_cybersecurity - INFO - QuantumTokenSimulator initialized
+2025-09-23 11:45:00,318 - quantum_cybersecurity - INFO - TamperEvidentLogger initialized
+2025-09-23 11:45:00,319 - quantum_cybersecurity - INFO - AuthManager initialized
+2025-09-23 11:45:00,319 - quantum_cybersecurity - INFO - SecurityMonitor initialized
+2025-09-23 11:45:00,320 - quantum_cybersecurity - INFO - GPS Simulator initialized
+2025-09-23 11:45:00,320 - quantum_cybersecurity - INFO - Quantum Cybersecurity System initialized
+2025-09-23 11:45:00,350 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 11:45:00,467 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 11:45:00,482 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 11:45:00,485 - quantum_cybersecurity - INFO -    • admin/admin123 (Full Access)
+2025-09-23 11:45:00,486 - quantum_cybersecurity - INFO -    • operator/operator123 (Read/Write)
+2025-09-23 11:45:00,486 - quantum_cybersecurity - INFO -    • auditor/auditor123 (Read/Audit)
+2025-09-23 11:45:00,487 - quantum_cybersecurity - INFO -    • viewer/viewer123 (Read Only)
+2025-09-23 11:45:00,487 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 11:45:00,520 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 11:45:00,677 - quantum_cybersecurity - INFO - Database tables created successfully
+2025-09-23 11:45:00,678 - quantum_cybersecurity - INFO - Database tables created
+2025-09-23 11:45:00,713 - quantum_cybersecurity - INFO - Default users initialized
+2025-09-23 11:45:00,713 - quantum_cybersecurity - INFO - Starting Quantum Cybersecurity System...
+2025-09-23 11:45:00,722 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV001
+2025-09-23 11:45:00,724 - quantum_cybersecurity - INFO - Generated quantum token QT_70bc9b677084cbafbc23edc3 for device QV001
+2025-09-23 11:45:00,726 - quantum_cybersecurity - INFO - Generated quantum token QT_5f3be163ff1fd65bbdeae441 for device QV001
+2025-09-23 11:45:00,728 - quantum_cybersecurity - INFO - Generated quantum token QT_800a0c6b01a18d15641ae99e for device QV001
+2025-09-23 11:45:00,728 - quantum_cybersecurity - INFO - Generated quantum token QT_7280a68c0177129860aedf15 for device QV001
+2025-09-23 11:45:00,729 - quantum_cybersecurity - INFO - Generated quantum token QT_5e3297a4aea10de88d441497 for device QV001
+2025-09-23 11:45:00,732 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV002
+2025-09-23 11:45:00,733 - quantum_cybersecurity - INFO - Generated quantum token QT_3ddb87aee486c4487c2e9c41 for device QV002
+2025-09-23 11:45:00,734 - quantum_cybersecurity - INFO - Generated quantum token QT_d7ddc5b277e3fe6bb5ab5671 for device QV002
+2025-09-23 11:45:00,734 - quantum_cybersecurity - INFO - Generated quantum token QT_764e9c99c0e67c22747439d4 for device QV002
+2025-09-23 11:45:00,735 - quantum_cybersecurity - INFO - Generated quantum token QT_092b7b56c6f0ab6cce9e6435 for device QV002
+2025-09-23 11:45:00,736 - quantum_cybersecurity - INFO - Generated quantum token QT_283724d44f4d874709a3ca2a for device QV002
+2025-09-23 11:45:00,739 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV003
+2025-09-23 11:45:00,740 - quantum_cybersecurity - INFO - Generated quantum token QT_50c2d1e435d6aead37e5f993 for device QV003
+2025-09-23 11:45:00,741 - quantum_cybersecurity - INFO - Generated quantum token QT_f79a783c609165576e9ecfcd for device QV003
+2025-09-23 11:45:00,741 - quantum_cybersecurity - INFO - Generated quantum token QT_8b516d51830a8ecd51b3f87c for device QV003
+2025-09-23 11:45:00,742 - quantum_cybersecurity - INFO - Generated quantum token QT_4e403d0840cb5c5b80d96bd5 for device QV003
+2025-09-23 11:45:00,743 - quantum_cybersecurity - INFO - Generated quantum token QT_101302f0802688650d04b70f for device QV003
+2025-09-23 11:45:00,746 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV004
+2025-09-23 11:45:00,747 - quantum_cybersecurity - INFO - Generated quantum token QT_0f72a83f3370e0fd828172c4 for device QV004
+2025-09-23 11:45:00,748 - quantum_cybersecurity - INFO - Generated quantum token QT_43e9e45bf4a1009c2b08e18f for device QV004
+2025-09-23 11:45:00,748 - quantum_cybersecurity - INFO - Generated quantum token QT_c59a25b176e41eb29a4ba1b1 for device QV004
+2025-09-23 11:45:00,749 - quantum_cybersecurity - INFO - Generated quantum token QT_c90543550fbd7d74e7c5a6b3 for device QV004
+2025-09-23 11:45:00,750 - quantum_cybersecurity - INFO - Generated quantum token QT_69717d934f89eeac8e21411a for device QV004
+2025-09-23 11:45:00,753 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV005
+2025-09-23 11:45:00,754 - quantum_cybersecurity - INFO - Generated quantum token QT_2f83b507b975bde89eaf8f19 for device QV005
+2025-09-23 11:45:00,755 - quantum_cybersecurity - INFO - Generated quantum token QT_1139ef818909a0d0e4fb3e96 for device QV005
+2025-09-23 11:45:00,756 - quantum_cybersecurity - INFO - Generated quantum token QT_2ef01b12aa4627062ac09e81 for device QV005
+2025-09-23 11:45:00,757 - quantum_cybersecurity - INFO - Generated quantum token QT_e6594199736e161f45819e7d for device QV005
+2025-09-23 11:45:00,757 - quantum_cybersecurity - INFO - Generated quantum token QT_0597ee0acc528a7e7fcf3f22 for device QV005
+2025-09-23 11:45:00,781 - quantum_cybersecurity - INFO - Demo devices initialized with fresh GPS data
+2025-09-23 11:45:00,782 - quantum_cybersecurity - INFO - System startup complete
+2025-09-23 11:45:55,279 - quantum_cybersecurity - INFO - User admin authenticated successfully
+2025-09-23 11:45:55,325 - quantum_cybersecurity - INFO - Tamper-evident log entry added: USER_LOGIN_SUCCESS
+2025-09-23 11:45:56,168 - quantum_cybersecurity - INFO - Found 25 GPS records in last 24 hours
+2025-09-23 11:45:56,171 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 11:46:37,495 - quantum_cybersecurity - INFO - Found 25 GPS records in last 24 hours
+2025-09-23 11:46:37,496 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 11:46:40,106 - quantum_cybersecurity - INFO - Found 25 GPS records in last 24 hours
+2025-09-23 11:46:40,107 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 11:46:42,487 - quantum_cybersecurity - INFO - Generated quantum token QT_e39bffa0eb30ff4f70c4b00f for device QV476
+2025-09-23 11:46:42,517 - quantum_cybersecurity - INFO - Tamper-evident log entry added: QUANTUM_TOKEN_GENERATED
+2025-09-23 11:46:43,831 - quantum_cybersecurity - INFO - Generated quantum token QT_03f70d9b3a8134f5efbb7994 for device QV813
+2025-09-23 11:46:43,848 - quantum_cybersecurity - INFO - Tamper-evident log entry added: QUANTUM_TOKEN_GENERATED
+2025-09-23 11:46:45,219 - quantum_cybersecurity - INFO - Generated quantum token QT_e511eecd0b1ea3327e407538 for device QV202
+2025-09-23 11:46:45,249 - quantum_cybersecurity - INFO - Tamper-evident log entry added: QUANTUM_TOKEN_GENERATED
+2025-09-23 11:46:49,390 - quantum_cybersecurity - INFO - Generated quantum token QT_b47d0feb23a574a78834262e for device QV372
+2025-09-23 11:46:49,415 - quantum_cybersecurity - INFO - Tamper-evident log entry added: QUANTUM_TOKEN_GENERATED
+2025-09-23 12:14:11,801 - quantum_cybersecurity - INFO - PostQuantumCrypto initialized
+2025-09-23 12:14:11,802 - quantum_cybersecurity - INFO - QuantumTokenSimulator initialized
+2025-09-23 12:14:11,802 - quantum_cybersecurity - INFO - TamperEvidentLogger initialized
+2025-09-23 12:14:11,803 - quantum_cybersecurity - INFO - AuthManager initialized
+2025-09-23 12:14:11,803 - quantum_cybersecurity - INFO - SecurityMonitor initialized
+2025-09-23 12:14:11,803 - quantum_cybersecurity - INFO - GPS Simulator initialized
+2025-09-23 12:14:11,804 - quantum_cybersecurity - INFO - Quantum Cybersecurity System initialized
+2025-09-23 12:14:11,809 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:14:11,819 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:14:11,824 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:14:11,825 - quantum_cybersecurity - INFO -    • admin/admin123 (Full Access)
+2025-09-23 12:14:11,825 - quantum_cybersecurity - INFO -    • operator/operator123 (Read/Write)
+2025-09-23 12:14:11,825 - quantum_cybersecurity - INFO -    • auditor/auditor123 (Read/Audit)
+2025-09-23 12:14:11,825 - quantum_cybersecurity - INFO -    • viewer/viewer123 (Read Only)
+2025-09-23 12:14:11,826 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:14:11,837 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:14:11,908 - quantum_cybersecurity - INFO - Database tables created successfully
+2025-09-23 12:14:11,908 - quantum_cybersecurity - INFO - Database tables created
+2025-09-23 12:14:11,919 - quantum_cybersecurity - INFO - Default users initialized
+2025-09-23 12:14:11,919 - quantum_cybersecurity - INFO - Starting Quantum Cybersecurity System...
+2025-09-23 12:14:11,923 - quantum_cybersecurity - INFO - Demo devices initialized with fresh GPS data
+2025-09-23 12:14:11,923 - quantum_cybersecurity - INFO - System startup complete
+2025-09-23 12:21:34,667 - quantum_cybersecurity - INFO - PostQuantumCrypto initialized
+2025-09-23 12:21:34,675 - quantum_cybersecurity - INFO - QuantumTokenSimulator initialized
+2025-09-23 12:21:34,679 - quantum_cybersecurity - INFO - TamperEvidentLogger initialized
+2025-09-23 12:21:34,682 - quantum_cybersecurity - INFO - AuthManager initialized
+2025-09-23 12:21:34,684 - quantum_cybersecurity - INFO - SecurityMonitor initialized
+2025-09-23 12:21:34,685 - quantum_cybersecurity - INFO - GPS Simulator initialized
+2025-09-23 12:21:34,686 - quantum_cybersecurity - INFO - Quantum Cybersecurity System initialized
+2025-09-23 12:21:34,736 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:21:34,770 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:21:34,807 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:21:34,818 - quantum_cybersecurity - INFO -    • admin/admin123 (Full Access)
+2025-09-23 12:21:34,819 - quantum_cybersecurity - INFO -    • operator/operator123 (Read/Write)
+2025-09-23 12:21:34,820 - quantum_cybersecurity - INFO -    • auditor/auditor123 (Read/Audit)
+2025-09-23 12:21:34,820 - quantum_cybersecurity - INFO -    • viewer/viewer123 (Read Only)
+2025-09-23 12:21:34,821 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:21:34,916 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 12:21:35,130 - quantum_cybersecurity - INFO - Database tables created successfully
+2025-09-23 12:21:35,132 - quantum_cybersecurity - INFO - Database tables created
+2025-09-23 12:21:35,195 - quantum_cybersecurity - INFO - Default users initialized
+2025-09-23 12:21:35,196 - quantum_cybersecurity - INFO - Starting Quantum Cybersecurity System...
+2025-09-23 12:21:35,229 - quantum_cybersecurity - INFO - Demo devices initialized with fresh GPS data
+2025-09-23 12:21:35,230 - quantum_cybersecurity - INFO - System startup complete
+2025-09-23 12:22:40,943 - quantum_cybersecurity - INFO - User admin authenticated successfully
+2025-09-23 12:22:40,984 - quantum_cybersecurity - INFO - Tamper-evident log entry added: USER_LOGIN_SUCCESS
+2025-09-23 12:22:45,726 - quantum_cybersecurity - INFO - Found 25 GPS records in last 24 hours
+2025-09-23 12:22:45,727 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:43:15,702 - quantum_cybersecurity - INFO - PostQuantumCrypto initialized
+2025-09-23 17:43:15,703 - quantum_cybersecurity - INFO - QuantumTokenSimulator initialized
+2025-09-23 17:43:15,704 - quantum_cybersecurity - INFO - TamperEvidentLogger initialized
+2025-09-23 17:43:15,704 - quantum_cybersecurity - INFO - AuthManager initialized
+2025-09-23 17:43:15,704 - quantum_cybersecurity - INFO - SecurityMonitor initialized
+2025-09-23 17:43:15,704 - quantum_cybersecurity - INFO - GPS Simulator initialized
+2025-09-23 17:43:15,705 - quantum_cybersecurity - INFO - Quantum Cybersecurity System initialized
+2025-09-23 17:43:15,720 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 17:43:15,728 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 17:43:15,733 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 17:43:15,734 - quantum_cybersecurity - INFO -    • admin/admin123 (Full Access)
+2025-09-23 17:43:15,734 - quantum_cybersecurity - INFO -    • operator/operator123 (Read/Write)
+2025-09-23 17:43:15,734 - quantum_cybersecurity - INFO -    • auditor/auditor123 (Read/Audit)
+2025-09-23 17:43:15,734 - quantum_cybersecurity - INFO -    • viewer/viewer123 (Read Only)
+2025-09-23 17:43:15,734 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 17:43:15,748 - quantum_cybersecurity - INFO - ================================================================================
+2025-09-23 17:43:15,826 - quantum_cybersecurity - INFO - Database tables created successfully
+2025-09-23 17:43:15,829 - quantum_cybersecurity - INFO - Database tables created
+2025-09-23 17:43:15,854 - quantum_cybersecurity - INFO - Default users initialized
+2025-09-23 17:43:15,855 - quantum_cybersecurity - INFO - Starting Quantum Cybersecurity System...
+2025-09-23 17:43:15,865 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV001
+2025-09-23 17:43:15,866 - quantum_cybersecurity - INFO - Generated quantum token QT_0b4bbf18de31eb2869d237ed for device QV001
+2025-09-23 17:43:15,867 - quantum_cybersecurity - INFO - Generated quantum token QT_9edf13f040f245d47bcc59a8 for device QV001
+2025-09-23 17:43:15,867 - quantum_cybersecurity - INFO - Generated quantum token QT_35183ef37d945475be61377a for device QV001
+2025-09-23 17:43:15,867 - quantum_cybersecurity - INFO - Generated quantum token QT_bfb247f520b5a4450a879859 for device QV001
+2025-09-23 17:43:15,868 - quantum_cybersecurity - INFO - Generated quantum token QT_26e0af0c465d867dbb92daa0 for device QV001
+2025-09-23 17:43:15,869 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV002
+2025-09-23 17:43:15,869 - quantum_cybersecurity - INFO - Generated quantum token QT_f7d19dd40aa8f823f07cd9b5 for device QV002
+2025-09-23 17:43:15,870 - quantum_cybersecurity - INFO - Generated quantum token QT_c65dd52fafbe26d420cbee24 for device QV002
+2025-09-23 17:43:15,870 - quantum_cybersecurity - INFO - Generated quantum token QT_1d117775f1bece73bcfa05da for device QV002
+2025-09-23 17:43:15,870 - quantum_cybersecurity - INFO - Generated quantum token QT_bf85a7ec17853cf6403fb95e for device QV002
+2025-09-23 17:43:15,870 - quantum_cybersecurity - INFO - Generated quantum token QT_a967b9432425035f10e0ff49 for device QV002
+2025-09-23 17:43:15,872 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV003
+2025-09-23 17:43:15,872 - quantum_cybersecurity - INFO - Generated quantum token QT_9404f824fe943c329e38a50a for device QV003
+2025-09-23 17:43:15,872 - quantum_cybersecurity - INFO - Generated quantum token QT_08b465916f03ce80765b9ed4 for device QV003
+2025-09-23 17:43:15,872 - quantum_cybersecurity - INFO - Generated quantum token QT_75f8bbb6ed4fe3c8646d4321 for device QV003
+2025-09-23 17:43:15,873 - quantum_cybersecurity - INFO - Generated quantum token QT_0ee6f3c513325ca1e99c8d3c for device QV003
+2025-09-23 17:43:15,873 - quantum_cybersecurity - INFO - Generated quantum token QT_982ec783da6761528680f8a4 for device QV003
+2025-09-23 17:43:15,879 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV004
+2025-09-23 17:43:15,880 - quantum_cybersecurity - INFO - Generated quantum token QT_9df2ed947907268f6a60f797 for device QV004
+2025-09-23 17:43:15,881 - quantum_cybersecurity - INFO - Generated quantum token QT_b3f4c45f291ae6ace497fa52 for device QV004
+2025-09-23 17:43:15,881 - quantum_cybersecurity - INFO - Generated quantum token QT_1de542e883455d1212dede27 for device QV004
+2025-09-23 17:43:15,882 - quantum_cybersecurity - INFO - Generated quantum token QT_8fc2d647c6bbaeceec470cb0 for device QV004
+2025-09-23 17:43:15,882 - quantum_cybersecurity - INFO - Generated quantum token QT_c458b32aaad43cbdd195f169 for device QV004
+2025-09-23 17:43:15,883 - quantum_cybersecurity - INFO - Generating fresh GPS data for QV005
+2025-09-23 17:43:15,883 - quantum_cybersecurity - INFO - Generated quantum token QT_0a211285f5c7c79d412168d4 for device QV005
+2025-09-23 17:43:15,883 - quantum_cybersecurity - INFO - Generated quantum token QT_5cb6fafe447441841417f675 for device QV005
+2025-09-23 17:43:15,884 - quantum_cybersecurity - INFO - Generated quantum token QT_5caaee9975ca4e2bf56a615b for device QV005
+2025-09-23 17:43:15,884 - quantum_cybersecurity - INFO - Generated quantum token QT_68ee2f0e3aa141060ef52cb0 for device QV005
+2025-09-23 17:43:15,884 - quantum_cybersecurity - INFO - Generated quantum token QT_2fe7ed572d54109855a034a2 for device QV005
+2025-09-23 17:43:15,898 - quantum_cybersecurity - INFO - Demo devices initialized with fresh GPS data
+2025-09-23 17:43:15,899 - quantum_cybersecurity - INFO - System startup complete
+2025-09-23 17:43:59,170 - quantum_cybersecurity - INFO - User admin authenticated successfully
+2025-09-23 17:43:59,214 - quantum_cybersecurity - INFO - Tamper-evident log entry added: USER_LOGIN_SUCCESS
+2025-09-23 17:43:59,948 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:43:59,954 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:38,967 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:38,970 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:44,228 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:44,229 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:45,659 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:45,661 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:45,847 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:45,848 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:46,064 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:46,065 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:46,269 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:46,275 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:46,425 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:46,434 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:46,604 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:46,608 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:46,763 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:46,765 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:46,983 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:46,987 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:47,209 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:47,210 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:47,329 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:47,337 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:44:47,531 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:44:47,534 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:45:05,273 - quantum_cybersecurity - INFO - User viewer authenticated successfully
+2025-09-23 17:45:05,294 - quantum_cybersecurity - INFO - Tamper-evident log entry added: USER_LOGIN_SUCCESS
+2025-09-23 17:45:07,341 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:45:07,356 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:45:26,799 - quantum_cybersecurity - ERROR - Database session error: 403: Insufficient permissions
+2025-09-23 17:45:38,308 - quantum_cybersecurity - ERROR - Database session error: 403: Insufficient permissions
+2025-09-23 17:45:45,074 - quantum_cybersecurity - ERROR - Database session error: 403: Insufficient permissions
+2025-09-23 17:51:07,135 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:51:07,164 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:51:13,956 - quantum_cybersecurity - ERROR - Database session error: 403: Insufficient permissions
+2025-09-23 17:56:04,085 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 17:56:04,086 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 17:56:15,176 - quantum_cybersecurity - ERROR - Database session error: 403: Insufficient permissions
+2025-09-23 18:18:13,288 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 18:18:13,292 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 18:19:05,433 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 18:19:05,434 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes
+2025-09-23 18:19:12,491 - quantum_cybersecurity - INFO - Found 50 GPS records in last 24 hours
+2025-09-23 18:19:12,492 - quantum_cybersecurity - ERROR - Failed to get active vehicles: can't subtract offset-naive and offset-aware datetimes

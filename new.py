@@ -16,19 +16,26 @@ import os
 import random
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
+from contextlib import asynccontextmanager
+from collections import defaultdict
+import logging
+
 from fastapi import FastAPI, HTTPException, Depends, Security, status, Request, WebSocket
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
-from contextlib import asynccontextmanager
+
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Text, Float, Boolean, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+
 from pydantic import BaseModel, Field
-import logging
-from collections import defaultdict
 from dotenv import load_dotenv
+
+# =============================================================================
+# Configuration and Setup
+# =============================================================================
 
 # Load environment variables
 load_dotenv()
@@ -45,7 +52,10 @@ logging.basicConfig(
 
 logger = logging.getLogger("quantum_cybersecurity")
 
-# Database Setup
+# =============================================================================
+# Database Configuration
+# =============================================================================
+
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///quantum_cybersecurity.db")
 engine = create_engine(
     DATABASE_URL, 
@@ -55,8 +65,12 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+# =============================================================================
 # Database Models
+# =============================================================================
+
 class DBLogEntry(Base):
+    """Tamper-evident log entries with blockchain-style hashing"""
     __tablename__ = "log_entries"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -67,7 +81,9 @@ class DBLogEntry(Base):
     hash_current = Column(String)
     severity = Column(String, default="INFO")
 
+
 class DBGPSData(Base):
+    """GPS tracking data with quantum encryption metadata"""
     __tablename__ = "gps_data"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -84,7 +100,9 @@ class DBGPSData(Base):
     quantum_token_theta = Column(Float, nullable=True)
     quantum_token_phi = Column(Float, nullable=True)
 
+
 class DBUser(Base):
+    """User accounts with role-based access control"""
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -96,8 +114,9 @@ class DBUser(Base):
     is_active = Column(Boolean, default=True)
     failed_login_attempts = Column(Integer, default=0)
 
-# Add these new models after your existing DBSecurityEvent class
+
 class DBVehicleRoute(Base):
+    """Vehicle routing with security checkpoints"""
     __tablename__ = "vehicle_routes"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -114,7 +133,9 @@ class DBVehicleRoute(Base):
     current_checkpoint = Column(Integer, default=0)
     is_locked = Column(Boolean, default=False)
 
+
 class DBVehicleMovement(Base):
+    """Real-time vehicle movement tracking"""
     __tablename__ = "vehicle_movements"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -127,7 +148,9 @@ class DBVehicleMovement(Base):
     is_authorized_stop = Column(Boolean, default=True)
     security_status = Column(String, default="SECURE")
 
+
 class DBSecurityEvent(Base):
+    """Security event logging and monitoring"""
     __tablename__ = "security_events"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -141,8 +164,13 @@ class DBSecurityEvent(Base):
     details = Column(Text)
     action_taken = Column(String, default="LOGGED")
 
+
+# =============================================================================
+# Database Utilities
+# =============================================================================
+
 def create_db_tables():
-    """Create database tables"""
+    """Create all database tables"""
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
@@ -150,8 +178,9 @@ def create_db_tables():
         logger.error(f"Failed to create database tables: {e}")
         raise
 
+
 def get_db():
-    """Database dependency"""
+    """Database session dependency"""
     db = SessionLocal()
     try:
         yield db
@@ -162,17 +191,24 @@ def get_db():
     finally:
         db.close()
 
-# Pydantic Models
+
+# =============================================================================
+# Pydantic Models (Request/Response Schemas)
+# =============================================================================
+
 class LoginRequest(BaseModel):
     username: str
     password: str
 
+
 class VehicleActionRequest(BaseModel):
     action: str
+
 
 class QuantumTokenRequest(BaseModel):
     device_id: str
     expires_in_hours: Optional[int] = 24
+
 
 class GPSData(BaseModel):
     device_id: str
@@ -185,6 +221,7 @@ class GPSData(BaseModel):
     heading: Optional[float] = None
     encrypted_payload: Optional[str] = None
 
+
 class QuantumToken(BaseModel):
     token_id: str
     device_id: str
@@ -195,7 +232,7 @@ class QuantumToken(BaseModel):
     expires_at: Optional[datetime] = None
     is_active: bool = True
 
-# Add these after your existing QuantumToken class
+
 class RouteCheckpoint(BaseModel):
     id: str
     lat: float
@@ -203,6 +240,7 @@ class RouteCheckpoint(BaseModel):
     name: str
     is_authorized: bool = True
     stop_duration_minutes: int = 5
+
 
 class CreateRouteRequest(BaseModel):
     vehicle_id: str
@@ -212,6 +250,7 @@ class CreateRouteRequest(BaseModel):
     end_lng: float
     checkpoints: List[RouteCheckpoint]
 
+
 class VehicleMovementUpdate(BaseModel):
     vehicle_id: str
     route_id: str
@@ -220,7 +259,11 @@ class VehicleMovementUpdate(BaseModel):
     checkpoint_id: Optional[str] = None
     is_authorized_stop: bool = True
 
+
+# =============================================================================
 # Core System Components
+# =============================================================================
+
 class PostQuantumCrypto:
     """Post-Quantum Cryptography implementation"""
     
@@ -250,6 +293,7 @@ class PostQuantumCrypto:
             self.encryption_stats["failed_operations"] += 1
             logger.error(f"Encryption failed: {e}")
             raise
+
 
 class QuantumTokenSimulator:
     """Quantum token simulation system"""
@@ -317,7 +361,8 @@ class QuantumTokenSimulator:
             
             is_valid = (
                 stored_token.device_id == token.device_id and
-                theta_diff <= 0.5 and phi_diff <= 0.5
+                theta_diff <= 0.5 and 
+                phi_diff <= 0.5
             )
             
             if is_valid:
@@ -331,6 +376,7 @@ class QuantumTokenSimulator:
         except Exception as e:
             logger.error(f"Token verification failed: {e}")
             return {"valid": False, "reason": "Verification error"}
+
 
 class TamperEvidentLogger:
     """Tamper-evident logging system"""
@@ -368,6 +414,7 @@ class TamperEvidentLogger:
             logger.error(f"Failed to add log entry: {e}")
             db.rollback()
             raise
+
 
 class AuthManager:
     """Authentication and authorization manager"""
@@ -479,6 +526,7 @@ class AuthManager:
         user_permissions = session.get("permissions", [])
         return required_permission in user_permissions
 
+
 class SecurityMonitor:
     """Security monitoring and event management"""
     
@@ -516,7 +564,7 @@ class SecurityMonitor:
         except Exception as e:
             logger.error(f"Failed to log security event: {e}")
 
-# Add this after the SecurityMonitor class
+
 class VehicleRoutingSystem:
     """Vehicle routing and security management"""
     
@@ -692,6 +740,7 @@ class VehicleRoutingSystem:
             logger.error(f"Failed to unlock vehicle: {e}")
             return False
 
+
 class GPSSimulator:
     """GPS data simulator for demo purposes"""
     
@@ -734,9 +783,9 @@ class GPSSimulator:
         
         return gps_points
 
-# Main System Class
+
 class QuantumCybersecuritySystem:
-    """Main quantum cybersecurity system"""
+    """Main quantum cybersecurity system coordinator"""
     
     def __init__(self):
         self.pqc = PostQuantumCrypto()
@@ -745,7 +794,7 @@ class QuantumCybersecuritySystem:
         self.auth_manager = AuthManager()
         self.security_monitor = SecurityMonitor()
         self.gps_simulator = GPSSimulator()
-        self.routing_system = VehicleRoutingSystem()  # ADD THIS LINE
+        self.routing_system = VehicleRoutingSystem()
         
         logger.info("Quantum Cybersecurity System initialized")
     
@@ -795,334 +844,304 @@ class QuantumCybersecuritySystem:
             db.rollback()
             raise
 
-    # FastAPI Application
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        """Application lifespan management"""
-        create_db_tables()
-        logger.info("Database tables created")
-        
+
+# =============================================================================
+# Initialize System Components
+# =============================================================================
+
+quantum_system = QuantumCybersecuritySystem()
+
+
+# =============================================================================
+# Security Dependencies
+# =============================================================================
+
+security = HTTPBearer()
+
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)):
+    """Get current authenticated user from token"""
+    token_info = quantum_system.auth_manager.verify_token(credentials.credentials)
+    if not token_info:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication"
+        )
+    return token_info
+
+
+# =============================================================================
+# FastAPI Application Lifespan
+# =============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan management"""
+    # Startup
+    create_db_tables()
+    logger.info("Database tables created")
+    
+    db = SessionLocal()
+    try:
+        quantum_system.auth_manager.initialize_default_users(db)
+        await quantum_system.startup(db)
+    finally:
+        db.close()
+    
+    yield
+    
+    # Shutdown
+    logger.info("Shutting down Quantum Cybersecurity System")
+
+
+# =============================================================================
+# FastAPI Application
+# =============================================================================
+
+app = FastAPI(
+    title="Quantum Cybersecurity Backend",
+    description="Complete quantum cybersecurity system backend",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
+)
+
+
+# =============================================================================
+# Middleware Configuration
+# =============================================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") != "*" else ["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+
+# =============================================================================
+# Exception Handlers
+# =============================================================================
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with detailed response"""
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "status": "error",
+            "message": "Invalid request data",
+            "details": exc.errors(),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle unexpected errors gracefully"""
+    logger.error(f"Global exception: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "status": "error",
+            "message": "Internal server error",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    )
+
+
+# =============================================================================
+# System & Health Check Endpoints
+# =============================================================================
+
+@app.get("/", tags=["System"])
+async def root():
+    """Root endpoint"""
+    return {
+        "system": "Quantum Cybersecurity Backend",
+        "version": "1.0.0",
+        "status": "operational",
+        "endpoints": {
+            "docs": "/api/docs",
+            "status": "/api/v1/system/status",
+            "login": "/api/v1/auth/login"
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+@app.get("/health", tags=["System"])
+async def health_check():
+    """Health check endpoint for deployment monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0.0"
+    }
+
+
+@app.get("/api/v1/system/status", tags=["System"])
+async def get_system_status():
+    """Get detailed system status"""
+    try:
         db = SessionLocal()
         try:
-            system = app.state.quantum_system
-            system.auth_manager.initialize_default_users(db)
-            await system.startup(db)
+            gps_count = db.query(DBGPSData).count()
+            recent_gps_count = db.query(DBGPSData).filter(
+                DBGPSData.timestamp > datetime.now(timezone.utc) - timedelta(hours=24)
+            ).count()
         finally:
             db.close()
         
-        yield
-
-    def create_app():
-        """Create FastAPI application"""
-        
-        app = FastAPI(
-            title="Quantum Cybersecurity Backend",
-            description="Complete quantum cybersecurity system backend",
-            version="1.0.0",
-            lifespan=lifespan,
-            docs_url="/api/docs",
-            redoc_url="/api/redoc"
-        )
-        
-        # Initialize system
-        quantum_system = QuantumCybersecuritySystem()
-        app.state.quantum_system = quantum_system
-
-        globals()['quantum_system'] = quantum_system  # ADD ONLY THIS LINE
-        
-        # CORS middleware
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=os.getenv("CORS_ORIGINS", "*").split(",") if os.getenv("CORS_ORIGINS") != "*" else ["*"],
-            allow_credentials=True,
-            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            allow_headers=["*"],
-        )
-    
-    # Global exception handlers
-    @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={
-                "status": "error",
-                "message": "Invalid request data",
-                "details": exc.errors(),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-        )
-
-    @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
-        logger.error(f"Global exception: {exc}")
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "status": "error",
-                "message": "Internal server error",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-        )
-    
-    # Security
-    security = HTTPBearer()
-    
-    def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)):
-        token_info = quantum_system.auth_manager.verify_token(credentials.credentials)
-        if not token_info:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication"
-            )
-        return token_info
-
-    # API Endpoints
-    @app.get("/", tags=["System"])
-    async def root():
-        """Root endpoint"""
         return {
-            "system": "Quantum Cybersecurity Backend",
-            "version": "1.0.0",
             "status": "operational",
-            "endpoints": {
-                "docs": "/api/docs",
-                "status": "/api/v1/system/status",
-                "login": "/api/v1/auth/login"
+            "version": "1.0.0",
+            "components": {
+                "active_sessions": len(quantum_system.auth_manager.active_sessions),
+                "active_quantum_tokens": len(quantum_system.quantum_simulator.active_tokens),
+                "security_events_today": len([
+                    e for e in quantum_system.security_monitor.security_events
+                    if (datetime.now(timezone.utc) - e["timestamp"]).days == 0
+                ]),
+                "gps_records": recent_gps_count,
+                "total_gps_records": gps_count
             },
+            "uptime": "System Operational",
+            "threats": len([
+                e for e in quantum_system.security_monitor.security_events
+                if e.get("severity", "").upper() in ["HIGH", "CRITICAL"]
+            ]),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
+    except Exception as e:
+        logger.error(f"Failed to get system status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve system status")
 
-    @app.get("/health", tags=["System"])
-    async def health_check():
-        """Health check endpoint for deployment monitoring"""
+
+# =============================================================================
+# Authentication Endpoints
+# =============================================================================
+
+@app.post("/api/v1/auth/login", tags=["Authentication"])
+async def login(login_req: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    """User login endpoint"""
+    username = login_req.username
+    password = login_req.password
+    client_ip = request.client.host
+    
+    token = quantum_system.auth_manager.authenticate_user(username, password, db)
+    
+    if token:
+        quantum_system.tamper_logger.add_log_entry("USER_LOGIN_SUCCESS", {
+            "username": username,
+            "client_ip": client_ip,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }, db)
+        
+        session_data = quantum_system.auth_manager.active_sessions[token]
+        
         return {
-            "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0.0"
-        }
-
-    @app.get("/api/v1/system/status", tags=["System"])
-    async def get_system_status():
-        """Get system status - Frontend compatible format"""
-        try:
-            db = SessionLocal()
-            try:
-                gps_count = db.query(DBGPSData).count()
-                recent_gps_count = db.query(DBGPSData).filter(
-                    DBGPSData.timestamp > datetime.now(timezone.utc) - timedelta(hours=24)
-                ).count()
-            finally:
-                db.close()
-            
-            return {
-                "status": "operational",
-                "version": "1.0.0",
-                "components": {
-                    "active_sessions": len(quantum_system.auth_manager.active_sessions),
-                    "active_quantum_tokens": len(quantum_system.quantum_simulator.active_tokens),
-                    "security_events_today": len([
-                        e for e in quantum_system.security_monitor.security_events
-                        if (datetime.now(timezone.utc) - e["timestamp"]).days == 0
-                    ]),
-                    "gps_records": recent_gps_count,
-                    "total_gps_records": gps_count
-                },
-                "uptime": "System Operational",
-                "threats": len([
-                    e for e in quantum_system.security_monitor.security_events
-                    if e.get("severity", "").upper() in ["HIGH", "CRITICAL"]
-                ]),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Failed to get system status: {e}")
-            raise HTTPException(status_code=500, detail="Failed to retrieve system status")
-
-    # Authentication Endpoints
-    @app.post("/api/v1/auth/login", tags=["Authentication"])
-    async def login(login_req: LoginRequest, request: Request, db: Session = Depends(get_db)):
-        """User login - Exactly matching frontend expectations"""
-        username = login_req.username
-        password = login_req.password
-        client_ip = request.client.host
-        
-        token = quantum_system.auth_manager.authenticate_user(username, password, db)
-        
-        if token:
-            quantum_system.tamper_logger.add_log_entry("USER_LOGIN_SUCCESS", {
+            "access_token": token,
+            "token_type": "bearer",
+            "expires_in": 86400,
+            "user_info": {
                 "username": username,
-                "client_ip": client_ip,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }, db)
-            
-            session_data = quantum_system.auth_manager.active_sessions[token]
-            
-            return {
-                "access_token": token,
-                "token_type": "bearer",
-                "expires_in": 86400,
-                "user_info": {
-                    "username": username,
-                    "role": session_data["role"],
-                    "permissions": session_data["permissions"]
-                }
+                "role": session_data["role"],
+                "permissions": session_data["permissions"]
             }
-        else:
-            quantum_system.security_monitor.log_security_event({
-                "event_id": f"AUTH_FAIL_{int(datetime.now().timestamp())}",
-                "timestamp": datetime.now(timezone.utc),
-                "event_type": "AUTH_FAILURE",
-                "severity": "MEDIUM",
-                "source_ip": client_ip,
-                "details": {"username": username},
-                "action_taken": "LOGGED"
-            }, db)
-            
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
-            )
+        }
+    else:
+        quantum_system.security_monitor.log_security_event({
+            "event_id": f"AUTH_FAIL_{int(datetime.now().timestamp())}",
+            "timestamp": datetime.now(timezone.utc),
+            "event_type": "AUTH_FAILURE",
+            "severity": "MEDIUM",
+            "source_ip": client_ip,
+            "details": {"username": username},
+            "action_taken": "LOGGED"
+        }, db)
+        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
 
-    # Vehicle Management
-    @app.get("/api/v1/vehicles/active", tags=["Vehicles"])
-    async def get_active_vehicles(
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Get active vehicles - Frontend compatible format"""
-        try:
-            vehicles = []
+
+# =============================================================================
+# Vehicle Management Endpoints
+# =============================================================================
+
+@app.get("/api/v1/vehicles/active", tags=["Vehicles"])
+async def get_active_vehicles(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all active vehicles with real-time tracking data"""
+    try:
+        vehicles = []
+        
+        # Check if we have any recent data at all
+        total_recent = db.query(DBGPSData).filter(
+            DBGPSData.timestamp > datetime.now(timezone.utc) - timedelta(hours=2)
+        ).count()
+        
+        # Force regenerate if no recent data
+        if total_recent == 0:
+            logger.info("No recent GPS data found, generating fresh demo data")
+            try:
+                quantum_system.initialize_demo_devices(db)
+            except Exception as e:
+                logger.error(f"Failed to initialize demo devices: {e}")
+        
+        # Get most recent GPS data for each device (last 24 hours)
+        recent_gps = db.query(DBGPSData).filter(
+            DBGPSData.timestamp > datetime.now(timezone.utc) - timedelta(hours=24)
+        ).order_by(DBGPSData.timestamp.desc()).all()
+        
+        logger.info(f"Found {len(recent_gps)} GPS records in last 24 hours")
+        
+        if recent_gps:
+            device_positions = {}
+            for gps in recent_gps:
+                if gps.device_id not in device_positions:
+                    device_positions[gps.device_id] = gps
+                elif gps.timestamp > device_positions[gps.device_id].timestamp:
+                    device_positions[gps.device_id] = gps
             
-            # Check if we have any recent data at all
-            total_recent = db.query(DBGPSData).filter(
-                DBGPSData.timestamp > datetime.now(timezone.utc) - timedelta(hours=2)
-            ).count()
-            
-            # Force regenerate if no recent data
-            if total_recent == 0:
-                logger.info("No recent GPS data found, generating fresh demo data")
-                try:
-                    quantum_system.initialize_demo_devices(db)
-                except Exception as e:
-                    logger.error(f"Failed to initialize demo devices: {e}")
-            
-            # Get most recent GPS data for each device (last 24 hours)
-            recent_gps = db.query(DBGPSData).filter(
-                DBGPSData.timestamp > datetime.now(timezone.utc) - timedelta(hours=24)
-            ).order_by(DBGPSData.timestamp.desc()).all()
-            
-            logger.info(f"Found {len(recent_gps)} GPS records in last 24 hours")
-            
-            if recent_gps:
-                device_positions = {}
-                for gps in recent_gps:
-                    if gps.device_id not in device_positions:
-                        device_positions[gps.device_id] = gps
-                    elif gps.timestamp > device_positions[gps.device_id].timestamp:
-                        device_positions[gps.device_id] = gps
+            for device_id, gps_record in device_positions.items():
+                lat = float(gps_record.latitude) if gps_record.latitude is not None else 40.7128
+                lng = float(gps_record.longitude) if gps_record.longitude is not None else -74.0060
                 
-                for device_id, gps_record in device_positions.items():
-                    lat = float(gps_record.latitude) if gps_record.latitude is not None else 40.7128
-                    lng = float(gps_record.longitude) if gps_record.longitude is not None else -74.0060
-                    
-                    time_diff = datetime.now(timezone.utc) - gps_record.timestamp
-                    hours_ago = time_diff.total_seconds() / 3600
-                    
-                    if hours_ago < 1:
-                        status = "Active"
-                    elif hours_ago < 6:
-                        status = "Recent"
-                    else:
-                        status = "Idle"
-                    
-                    vehicles.append({
-                        "vehicle_id": device_id,
-                        "lat": lat,
-                        "lng": lng,
-                        "status": status,
-                        "last_update": gps_record.timestamp.isoformat(),
-                        "security_status": "Quantum Secured",
-                        "speed": float(gps_record.speed) if gps_record.speed is not None else 0.0,
-                        "heading": float(gps_record.heading) if gps_record.heading is not None else 0.0,
-                        "accuracy": float(gps_record.accuracy) if gps_record.accuracy is not None else 5.0
-                    })
-            
-            # Fallback: Always ensure we have demo vehicles for testing
-            if not vehicles:
-                logger.warning("No vehicles from database, using hardcoded demo data")
-                current_time = datetime.now(timezone.utc).isoformat()
-                demo_vehicles = [
-                    {
-                        "vehicle_id": "QV001",
-                        "lat": 40.7128,
-                        "lng": -74.0060,
-                        "status": "Active",
-                        "last_update": current_time,
-                        "security_status": "Quantum Secured",
-                        "speed": 25.0,
-                        "heading": 90.0,
-                        "accuracy": 5.0
-                    },
-                    {
-                        "vehicle_id": "QV002", 
-                        "lat": 40.7589,
-                        "lng": -73.9851,
-                        "status": "Active",
-                        "last_update": current_time,
-                        "security_status": "Quantum Secured",
-                        "speed": 0.0,
-                        "heading": 0.0,
-                        "accuracy": 3.0
-                    },
-                    {
-                        "vehicle_id": "QV003",
-                        "lat": 40.6782,
-                        "lng": -73.9442,
-                        "status": "Active",
-                        "last_update": current_time,
-                        "security_status": "Quantum Secured",
-                        "speed": 45.0,
-                        "heading": 180.0,
-                        "accuracy": 8.0
-                    },
-                    {
-                        "vehicle_id": "QV004",
-                        "lat": 40.7831,
-                        "lng": -73.9712,
-                        "status": "Active", 
-                        "last_update": current_time,
-                        "security_status": "Quantum Secured",
-                        "speed": 30.0,
-                        "heading": 270.0,
-                        "accuracy": 4.0
-                    },
-                    {
-                        "vehicle_id": "QV005",
-                        "lat": 40.7282,
-                        "lng": -73.7949,
-                        "status": "Active",
-                        "last_update": current_time,
-                        "security_status": "Quantum Secured",
-                        "speed": 15.0,
-                        "heading": 45.0,
-                        "accuracy": 6.0
-                    }
-                ]
-                vehicles = demo_vehicles
-            
-            logger.info(f"Returning {len(vehicles)} vehicles to frontend")
-            
-            return {
-                "active_vehicles": vehicles,
-                "count": len(vehicles),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to get active vehicles: {e}")
-            # Return demo data even on error to ensure frontend works
+                time_diff = datetime.now(timezone.utc) - gps_record.timestamp
+                hours_ago = time_diff.total_seconds() / 3600
+                
+                if hours_ago < 1:
+                    status = "Active"
+                elif hours_ago < 6:
+                    status = "Recent"
+                else:
+                    status = "Idle"
+                
+                vehicles.append({
+                    "vehicle_id": device_id,
+                    "lat": lat,
+                    "lng": lng,
+                    "status": status,
+                    "last_update": gps_record.timestamp.isoformat(),
+                    "security_status": "Quantum Secured",
+                    "speed": float(gps_record.speed) if gps_record.speed is not None else 0.0,
+                    "heading": float(gps_record.heading) if gps_record.heading is not None else 0.0,
+                    "accuracy": float(gps_record.accuracy) if gps_record.accuracy is not None else 5.0
+                })
+        
+        # Fallback: Always ensure we have demo vehicles for testing
+        if not vehicles:
+            logger.warning("No vehicles from database, using hardcoded demo data")
             current_time = datetime.now(timezone.utc).isoformat()
-            fallback_vehicles = [
+            demo_vehicles = [
                 {
                     "vehicle_id": "QV001",
                     "lat": 40.7128,
@@ -1130,461 +1149,559 @@ class QuantumCybersecuritySystem:
                     "status": "Active",
                     "last_update": current_time,
                     "security_status": "Quantum Secured",
+                    "speed": 25.0,
+                    "heading": 90.0,
+                    "accuracy": 5.0
+                },
+                {
+                    "vehicle_id": "QV002", 
+                    "lat": 40.7589,
+                    "lng": -73.9851,
+                    "status": "Active",
+                    "last_update": current_time,
+                    "security_status": "Quantum Secured",
                     "speed": 0.0,
                     "heading": 0.0,
-                    "accuracy": 5.0
+                    "accuracy": 3.0
+                },
+                {
+                    "vehicle_id": "QV003",
+                    "lat": 40.6782,
+                    "lng": -73.9442,
+                    "status": "Active",
+                    "last_update": current_time,
+                    "security_status": "Quantum Secured",
+                    "speed": 45.0,
+                    "heading": 180.0,
+                    "accuracy": 8.0
+                },
+                {
+                    "vehicle_id": "QV004",
+                    "lat": 40.7831,
+                    "lng": -73.9712,
+                    "status": "Active", 
+                    "last_update": current_time,
+                    "security_status": "Quantum Secured",
+                    "speed": 30.0,
+                    "heading": 270.0,
+                    "accuracy": 4.0
+                },
+                {
+                    "vehicle_id": "QV005",
+                    "lat": 40.7282,
+                    "lng": -73.7949,
+                    "status": "Active",
+                    "last_update": current_time,
+                    "security_status": "Quantum Secured",
+                    "speed": 15.0,
+                    "heading": 45.0,
+                    "accuracy": 6.0
                 }
             ]
-            return {
-                "active_vehicles": fallback_vehicles,
-                "count": len(fallback_vehicles),
-                "timestamp": current_time,
-                "error": "Fallback data due to system error"
-            }
-
-    @app.post("/api/v1/vehicles/{vehicle_id}/action", tags=["Vehicles"])
-    async def execute_vehicle_action(
-        vehicle_id: str,
-        action_data: VehicleActionRequest,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Execute vehicle action - Frontend synchronized"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+            vehicles = demo_vehicles
         
-        action = action_data.action
-        
-        try:
-            quantum_system.tamper_logger.add_log_entry(f"VEHICLE_ACTION_{action.upper()}", {
-                "vehicle_id": vehicle_id,
-                "action": action,
-                "user": current_user.get("username"),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }, db)
-            
-            action_messages = {
-                "track": f"Tracking initiated for vehicle {vehicle_id}",
-                "lock": f"Emergency lock activated for vehicle {vehicle_id}",
-                "unlock": f"Vehicle {vehicle_id} unlocked successfully",
-                "locate": f"Location request sent to vehicle {vehicle_id}",
-                "immobilize": f"Vehicle {vehicle_id} immobilized for security",
-                "status": f"Status check completed for vehicle {vehicle_id}",
-                "ping": f"Ping successful - vehicle {vehicle_id} responding"
-            }
-            
-            message = action_messages.get(action, f"Action {action} executed for vehicle {vehicle_id}")
-            
-            if action in ["lock", "immobilize"]:
-                quantum_system.security_monitor.log_security_event({
-                    "event_id": f"VEHICLE_SECURE_{int(datetime.now().timestamp())}",
-                    "timestamp": datetime.now(timezone.utc),
-                    "event_type": "VEHICLE_SECURITY_ACTION",
-                    "severity": "HIGH",
-                    "source_ip": "system",
-                    "details": {
-                        "vehicle_id": vehicle_id,
-                        "action": action,
-                        "user": current_user.get("username")
-                    },
-                    "action_taken": "VEHICLE_SECURED"
-                }, db)
-            
-            return {
-                "status": "success",
-                "message": message,
-                "vehicle_id": vehicle_id,
-                "action": action,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Vehicle action failed: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to execute {action}")
-
-    # Quantum Token Management
-    @app.post("/api/v1/quantum/generate", tags=["Quantum"])
-    async def generate_quantum_token(
-        token_request: QuantumTokenRequest,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Generate quantum authentication token - Frontend synchronized"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
-        
-        device_id = token_request.device_id
-        expires_in_hours = token_request.expires_in_hours
-        
-        try:
-            token = quantum_system.quantum_simulator.generate_quantum_token(device_id, expires_in_hours)
-            
-            quantum_system.tamper_logger.add_log_entry("QUANTUM_TOKEN_GENERATED", {
-                "token_id": token.token_id,
-                "device_id": device_id,
-                "expires_in_hours": expires_in_hours,
-                "user": current_user.get("username")
-            }, db)
-            
-            return {"quantum_token": token.dict()}
-            
-        except Exception as e:
-            logger.error(f"Token generation failed: {e}")
-            raise HTTPException(status_code=500, detail="Failed to generate quantum token")
-
-    @app.get("/api/v1/quantum/tokens", tags=["Quantum"])
-    async def get_quantum_tokens(current_user = Depends(get_current_user)):
-        """Get all quantum tokens - Frontend compatible"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "read"):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
-        
-        tokens = list(quantum_system.quantum_simulator.active_tokens.values())
-        token_data = [token_info["token"].dict() for token_info in tokens]
+        logger.info(f"Returning {len(vehicles)} vehicles to frontend")
         
         return {
-            "tokens": token_data,
-            "count": len(token_data),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "system_metrics": {
-                "active_sessions": len(quantum_system.auth_manager.active_sessions),
-                "active_quantum_tokens": len(quantum_system.quantum_simulator.active_tokens),
-                "security_events_today": len([
-                    e for e in quantum_system.security_monitor.security_events
-                    if (datetime.now(timezone.utc) - e["timestamp"]).days == 0
-                ])
+            "active_vehicles": vehicles,
+            "count": len(vehicles),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get active vehicles: {e}")
+        # Return demo data even on error to ensure frontend works
+        current_time = datetime.now(timezone.utc).isoformat()
+        fallback_vehicles = [
+            {
+                "vehicle_id": "QV001",
+                "lat": 40.7128,
+                "lng": -74.0060,
+                "status": "Active",
+                "last_update": current_time,
+                "security_status": "Quantum Secured",
+                "speed": 0.0,
+                "heading": 0.0,
+                "accuracy": 5.0
             }
+        ]
+        return {
+            "active_vehicles": fallback_vehicles,
+            "count": len(fallback_vehicles),
+            "timestamp": current_time,
+            "error": "Fallback data due to system error"
         }
 
-    @app.post("/api/v1/quantum/verify", tags=["Quantum"])
-    async def verify_quantum_token(
-        token: QuantumToken,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Verify quantum token authenticity"""
-        verification_result = quantum_system.quantum_simulator.verify_quantum_token(token)
+
+@app.post("/api/v1/vehicles/{vehicle_id}/action", tags=["Vehicles"])
+async def execute_vehicle_action(
+    vehicle_id: str,
+    action_data: VehicleActionRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Execute security action on vehicle"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    action = action_data.action
+    
+    try:
+        quantum_system.tamper_logger.add_log_entry(f"VEHICLE_ACTION_{action.upper()}", {
+            "vehicle_id": vehicle_id,
+            "action": action,
+            "user": current_user.get("username"),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }, db)
         
-        quantum_system.tamper_logger.add_log_entry("QUANTUM_TOKEN_VERIFIED", {
+        action_messages = {
+            "track": f"Tracking initiated for vehicle {vehicle_id}",
+            "lock": f"Emergency lock activated for vehicle {vehicle_id}",
+            "unlock": f"Vehicle {vehicle_id} unlocked successfully",
+            "locate": f"Location request sent to vehicle {vehicle_id}",
+            "immobilize": f"Vehicle {vehicle_id} immobilized for security",
+            "status": f"Status check completed for vehicle {vehicle_id}",
+            "ping": f"Ping successful - vehicle {vehicle_id} responding"
+        }
+        
+        message = action_messages.get(action, f"Action {action} executed for vehicle {vehicle_id}")
+        
+        if action in ["lock", "immobilize"]:
+            quantum_system.security_monitor.log_security_event({
+                "event_id": f"VEHICLE_SECURE_{int(datetime.now().timestamp())}",
+                "timestamp": datetime.now(timezone.utc),
+                "event_type": "VEHICLE_SECURITY_ACTION",
+                "severity": "HIGH",
+                "source_ip": "system",
+                "details": {
+                    "vehicle_id": vehicle_id,
+                    "action": action,
+                    "user": current_user.get("username")
+                },
+                "action_taken": "VEHICLE_SECURED"
+            }, db)
+        
+        return {
+            "status": "success",
+            "message": message,
+            "vehicle_id": vehicle_id,
+            "action": action,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Vehicle action failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to execute {action}")
+
+
+# =============================================================================
+# Quantum Security Endpoints
+# =============================================================================
+
+@app.post("/api/v1/quantum/generate", tags=["Quantum"])
+async def generate_quantum_token(
+    token_request: QuantumTokenRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Generate quantum authentication token"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    device_id = token_request.device_id
+    expires_in_hours = token_request.expires_in_hours
+    
+    try:
+        token = quantum_system.quantum_simulator.generate_quantum_token(device_id, expires_in_hours)
+        
+        quantum_system.tamper_logger.add_log_entry("QUANTUM_TOKEN_GENERATED", {
             "token_id": token.token_id,
-            "valid": verification_result["valid"],
+            "device_id": device_id,
+            "expires_in_hours": expires_in_hours,
             "user": current_user.get("username")
         }, db)
         
-        return verification_result
-
-    # Security Events
-    @app.get("/api/v1/security/events", tags=["Security"])
-    async def get_security_events(
-        hours: int = 24,
-        severity: Optional[str] = None,
-        current_user = Depends(get_current_user)
-    ):
-        """Get security events - Frontend compatible"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "read"):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return {"quantum_token": token.dict()}
         
-        try:
-            cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    except Exception as e:
+        logger.error(f"Token generation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate quantum token")
+
+
+@app.get("/api/v1/quantum/tokens", tags=["Quantum"])
+async def get_quantum_tokens(current_user = Depends(get_current_user)):
+    """Get all active quantum tokens"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "read"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    tokens = list(quantum_system.quantum_simulator.active_tokens.values())
+    token_data = [token_info["token"].dict() for token_info in tokens]
+    
+    return {
+        "tokens": token_data,
+        "count": len(token_data),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "system_metrics": {
+            "active_sessions": len(quantum_system.auth_manager.active_sessions),
+            "active_quantum_tokens": len(quantum_system.quantum_simulator.active_tokens),
+            "security_events_today": len([
+                e for e in quantum_system.security_monitor.security_events
+                if (datetime.now(timezone.utc) - e["timestamp"]).days == 0
+            ])
+        }
+    }
+
+
+@app.post("/api/v1/quantum/verify", tags=["Quantum"])
+async def verify_quantum_token(
+    token: QuantumToken,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Verify quantum token authenticity"""
+    verification_result = quantum_system.quantum_simulator.verify_quantum_token(token)
+    
+    quantum_system.tamper_logger.add_log_entry("QUANTUM_TOKEN_VERIFIED", {
+        "token_id": token.token_id,
+        "valid": verification_result["valid"],
+        "user": current_user.get("username")
+    }, db)
+    
+    return verification_result
+
+
+# =============================================================================
+# Security Monitoring Endpoints
+# =============================================================================
+
+@app.get("/api/v1/security/events", tags=["Security"])
+async def get_security_events(
+    hours: int = 24,
+    severity: Optional[str] = None,
+    current_user = Depends(get_current_user)
+):
+    """Get security events with filtering"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "read"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+        filtered_events = [
+            event for event in quantum_system.security_monitor.security_events
+            if event["timestamp"] > cutoff
+        ]
+        
+        if severity:
             filtered_events = [
-                event for event in quantum_system.security_monitor.security_events
-                if event["timestamp"] > cutoff
+                event for event in filtered_events
+                if event.get("severity", "").upper() == severity.upper()
             ]
-            
-            if severity:
-                filtered_events = [
-                    event for event in filtered_events
-                    if event.get("severity", "").upper() == severity.upper()
-                ]
-            
-            # Always provide some demo events for production
-            if not filtered_events:
-                current_time = datetime.now(timezone.utc)
-                filtered_events = [
-                    {
-                        "event_id": f"sys_init_{int(current_time.timestamp())}",
-                        "timestamp": current_time,
-                        "event_type": "SYSTEM_OPERATIONAL",
-                        "severity": "LOW",
-                        "details": {"reason": "System operational - quantum security active"},
-                        "action_taken": "MONITORED"
-                    },
-                    {
-                        "event_id": f"gps_sync_{int((current_time - timedelta(minutes=5)).timestamp())}",
-                        "timestamp": current_time - timedelta(minutes=5),
-                        "event_type": "GPS_SYNC",
-                        "severity": "LOW",
-                        "details": {"reason": "GPS tracking synchronized"},
-                        "action_taken": "LOGGED"
-                    }
-                ]
-            
-            return {
-                "events": filtered_events,
-                "count": len(filtered_events),
-                "time_window_hours": hours,
-                "severity_filter": severity,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
         
-        except Exception as e:
-            logger.error(f"Failed to get security events: {e}")
-            return {
-                "events": [{
-                    "event_id": f"error_fallback_{int(datetime.now().timestamp())}",
-                    "timestamp": datetime.now(timezone.utc),
-                    "event_type": "SYSTEM_ERROR",
-                    "severity": "MEDIUM",
-                    "details": {"reason": "Security events temporarily unavailable"},
+        # Always provide some demo events for production
+        if not filtered_events:
+            current_time = datetime.now(timezone.utc)
+            filtered_events = [
+                {
+                    "event_id": f"sys_init_{int(current_time.timestamp())}",
+                    "timestamp": current_time,
+                    "event_type": "SYSTEM_OPERATIONAL",
+                    "severity": "LOW",
+                    "details": {"reason": "System operational - quantum security active"},
+                    "action_taken": "MONITORED"
+                },
+                {
+                    "event_id": f"gps_sync_{int((current_time - timedelta(minutes=5)).timestamp())}",
+                    "timestamp": current_time - timedelta(minutes=5),
+                    "event_type": "GPS_SYNC",
+                    "severity": "LOW",
+                    "details": {"reason": "GPS tracking synchronized"},
                     "action_taken": "LOGGED"
-                }],
-                "count": 1,
-                "time_window_hours": hours,
-                "severity_filter": severity,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-
-        # Add these routing endpoints after your security events endpoint
-
-    @app.post("/api/v1/vehicles/routes/create", tags=["Vehicle Routing"])
-    async def create_vehicle_route(
-        route_request: CreateRouteRequest,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Create a new vehicle route with security checkpoints"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
+                }
+            ]
         
-        try:
-            route_id = quantum_system.routing_system.create_route(route_request, db)
-            
-            quantum_system.tamper_logger.add_log_entry("ROUTE_CREATED", {
+        return {
+            "events": filtered_events,
+            "count": len(filtered_events),
+            "time_window_hours": hours,
+            "severity_filter": severity,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    
+    except Exception as e:
+        logger.error(f"Failed to get security events: {e}")
+        return {
+            "events": [{
+                "event_id": f"error_fallback_{int(datetime.now().timestamp())}",
+                "timestamp": datetime.now(timezone.utc),
+                "event_type": "SYSTEM_ERROR",
+                "severity": "MEDIUM",
+                "details": {"reason": "Security events temporarily unavailable"},
+                "action_taken": "LOGGED"
+            }],
+            "count": 1,
+            "time_window_hours": hours,
+            "severity_filter": severity,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+
+# =============================================================================
+# Vehicle Routing Endpoints
+# =============================================================================
+
+@app.post("/api/v1/vehicles/routes/create", tags=["Vehicle Routing"])
+async def create_vehicle_route(
+    route_request: CreateRouteRequest,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create secure vehicle route with checkpoints"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        route_id = quantum_system.routing_system.create_route(route_request, db)
+        
+        quantum_system.tamper_logger.add_log_entry("ROUTE_CREATED", {
+            "route_id": route_id,
+            "vehicle_id": route_request.vehicle_id,
+            "checkpoints_count": len(route_request.checkpoints),
+            "user": current_user.get("username")
+        }, db)
+        
+        return {
+            "status": "success",
+            "route_id": route_id,
+            "message": f"Route created for vehicle {route_request.vehicle_id}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Route creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create route")
+
+
+@app.post("/api/v1/vehicles/routes/{route_id}/start", tags=["Vehicle Routing"])
+async def start_vehicle_route(
+    route_id: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Start vehicle movement on route"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    
+    try:
+        success = quantum_system.routing_system.start_route(route_id, db)
+        
+        if success:
+            quantum_system.tamper_logger.add_log_entry("ROUTE_STARTED", {
                 "route_id": route_id,
-                "vehicle_id": route_request.vehicle_id,
-                "checkpoints_count": len(route_request.checkpoints),
                 "user": current_user.get("username")
             }, db)
             
             return {
                 "status": "success",
+                "message": f"Route {route_id} started",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Route not found")
+            
+    except Exception as e:
+        logger.error(f"Failed to start route: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start route")
+
+
+@app.post("/api/v1/vehicles/movement/update", tags=["Vehicle Routing"])
+async def update_vehicle_movement(
+    movement: VehicleMovementUpdate,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update vehicle position and check security"""
+    try:
+        result = quantum_system.routing_system.update_vehicle_position(movement, db)
+        
+        if result["status"] == "violation":
+            quantum_system.security_monitor.log_security_event({
+                "event_id": f"ROUTE_VIOLATION_{int(datetime.now().timestamp())}",
+                "timestamp": datetime.now(timezone.utc),
+                "event_type": "ROUTE_SECURITY_VIOLATION",
+                "severity": "HIGH",
+                "details": {
+                    "vehicle_id": movement.vehicle_id,
+                    "route_id": movement.route_id,
+                    "violation_type": "unauthorized_checkpoint"
+                },
+                "action_taken": "VEHICLE_LOCKED"
+            }, db)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Movement update failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update vehicle position")
+
+
+@app.post("/api/v1/vehicles/{vehicle_id}/unlock", tags=["Vehicle Routing"])
+async def unlock_vehicle(
+    vehicle_id: str,
+    route_id: str,
+    authorization_code: str,
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Unlock vehicle after security violation"""
+    if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "admin"):
+        raise HTTPException(status_code=403, detail="Admin permissions required")
+    
+    try:
+        success = quantum_system.routing_system.unlock_vehicle(
+            vehicle_id, route_id, db, authorization_code
+        )
+        
+        if success:
+            quantum_system.tamper_logger.add_log_entry("VEHICLE_UNLOCKED", {
+                "vehicle_id": vehicle_id,
                 "route_id": route_id,
-                "message": f"Route created for vehicle {route_request.vehicle_id}",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Route creation failed: {e}")
-            raise HTTPException(status_code=500, detail="Failed to create route")
-
-    @app.post("/api/v1/vehicles/routes/{route_id}/start", tags=["Vehicle Routing"])
-    async def start_vehicle_route(
-        route_id: str,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Start vehicle movement on the specified route"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "write"):
-            raise HTTPException(status_code=403, detail="Insufficient permissions")
-        
-        try:
-            success = quantum_system.routing_system.start_route(route_id, db)
-            
-            if success:
-                quantum_system.tamper_logger.add_log_entry("ROUTE_STARTED", {
-                    "route_id": route_id,
-                    "user": current_user.get("username")
-                }, db)
-                
-                return {
-                    "status": "success",
-                    "message": f"Route {route_id} started",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-            else:
-                raise HTTPException(status_code=404, detail="Route not found")
-                
-        except Exception as e:
-            logger.error(f"Failed to start route: {e}")
-            raise HTTPException(status_code=500, detail="Failed to start route")
-
-    @app.post("/api/v1/vehicles/movement/update", tags=["Vehicle Routing"])
-    async def update_vehicle_movement(
-        movement: VehicleMovementUpdate,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Update vehicle position and check for security violations"""
-        try:
-            result = quantum_system.routing_system.update_vehicle_position(movement, db)
-            
-            if result["status"] == "violation":
-                quantum_system.security_monitor.log_security_event({
-                    "event_id": f"ROUTE_VIOLATION_{int(datetime.now().timestamp())}",
-                    "timestamp": datetime.now(timezone.utc),
-                    "event_type": "ROUTE_SECURITY_VIOLATION",
-                    "severity": "HIGH",
-                    "details": {
-                        "vehicle_id": movement.vehicle_id,
-                        "route_id": movement.route_id,
-                        "violation_type": "unauthorized_checkpoint"
-                    },
-                    "action_taken": "VEHICLE_LOCKED"
-                }, db)
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Movement update failed: {e}")
-            raise HTTPException(status_code=500, detail="Failed to update vehicle position")
-
-    @app.post("/api/v1/vehicles/{vehicle_id}/unlock", tags=["Vehicle Routing"])
-    async def unlock_vehicle(
-        vehicle_id: str,
-        route_id: str,
-        authorization_code: str,
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Unlock vehicle after security violation"""
-        if not quantum_system.auth_manager.check_permission(current_user.get("token", ""), "admin"):
-            raise HTTPException(status_code=403, detail="Admin permissions required")
-        
-        try:
-            success = quantum_system.routing_system.unlock_vehicle(
-                vehicle_id, route_id, db, authorization_code
-            )
-            
-            if success:
-                quantum_system.tamper_logger.add_log_entry("VEHICLE_UNLOCKED", {
-                    "vehicle_id": vehicle_id,
-                    "route_id": route_id,
-                    "user": current_user.get("username")
-                }, db)
-                
-                return {
-                    "status": "success",
-                    "message": f"Vehicle {vehicle_id} unlocked successfully"
-                }
-            else:
-                raise HTTPException(status_code=401, detail="Invalid authorization code")
-                
-        except Exception as e:
-            logger.error(f"Vehicle unlock failed: {e}")
-            raise HTTPException(status_code=500, detail="Failed to unlock vehicle")
-
-    @app.get("/api/v1/vehicles/routes/active", tags=["Vehicle Routing"])
-    async def get_active_routes(
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Get all active vehicle routes"""
-        try:
-            active_routes = db.query(DBVehicleRoute).filter(
-                DBVehicleRoute.status.in_(["PLANNED", "ACTIVE"])
-            ).all()
-            
-            routes_data = []
-            for route in active_routes:
-                checkpoints = json.loads(route.checkpoints) if route.checkpoints else []
-                routes_data.append({
-                    "route_id": route.route_id,
-                    "vehicle_id": route.vehicle_id,
-                    "status": route.status,
-                    "start_point": {"lat": route.start_lat, "lng": route.start_lng},
-                    "end_point": {"lat": route.end_lat, "lng": route.end_lng},
-                    "checkpoints": checkpoints,
-                    "current_checkpoint": route.current_checkpoint,
-                    "is_locked": route.is_locked,
-                    "created_at": route.created_at.isoformat()
-                })
-            
-            return {
-                "active_routes": routes_data,
-                "count": len(routes_data),
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Failed to get active routes: {e}")
-            raise HTTPException(status_code=500, detail="Failed to retrieve active routes")
-
-    # Frontend UI serving
-    @app.get("/ui")
-    async def serve_ui():
-        """Serve the frontend UI"""
-        try:
-            return FileResponse("demo.html")
-        except:
-            return {"message": "UI file not found. Please place demo.html in the same directory."}
-
-    # Debug endpoints
-    @app.get("/api/v1/debug/gps", tags=["Debug"])
-    async def debug_gps_data(
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Debug GPS data in database"""
-        try:
-            all_gps = db.query(DBGPSData).order_by(DBGPSData.timestamp.desc()).limit(50).all()
-            
-            gps_data = []
-            for gps in all_gps:
-                gps_data.append({
-                    "id": gps.id,
-                    "device_id": gps.device_id,
-                    "timestamp": gps.timestamp.isoformat(),
-                    "latitude": gps.latitude,
-                    "longitude": gps.longitude,
-                    "altitude": gps.altitude,
-                    "accuracy": gps.accuracy,
-                    "speed": gps.speed,
-                    "heading": gps.heading
-                })
-            
-            device_counts_query = db.query(DBGPSData.device_id, func.count(DBGPSData.id)).group_by(DBGPSData.device_id).all()
-            device_counts = {device: count for device, count in device_counts_query}
-            
-            return {
-                "total_records": len(gps_data),
-                "records": gps_data,
-                "device_counts": device_counts,
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
-            
-        except Exception as e:
-            logger.error(f"Debug GPS failed: {e}")
-            return {"error": str(e)}
-
-    @app.post("/api/v1/debug/reset-gps", tags=["Debug"])
-    async def reset_gps_data(
-        current_user = Depends(get_current_user),
-        db: Session = Depends(get_db)
-    ):
-        """Reset and regenerate GPS data"""
-        try:
-            db.query(DBGPSData).delete()
-            db.commit()
-            
-            quantum_system.initialize_demo_devices(db)
+                "user": current_user.get("username")
+            }, db)
             
             return {
                 "status": "success",
-                "message": "GPS data reset and regenerated",
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "message": f"Vehicle {vehicle_id} unlocked successfully"
             }
+        else:
+            raise HTTPException(status_code=401, detail="Invalid authorization code")
             
-        except Exception as e:
-            logger.error(f"GPS reset failed: {e}")
-            db.rollback()
-            return {"error": str(e)}
+    except Exception as e:
+        logger.error(f"Vehicle unlock failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to unlock vehicle")
 
-        return app
+
+@app.get("/api/v1/vehicles/routes/active", tags=["Vehicle Routing"])
+async def get_active_routes(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all active vehicle routes"""
+    try:
+        active_routes = db.query(DBVehicleRoute).filter(
+            DBVehicleRoute.status.in_(["PLANNED", "ACTIVE"])
+        ).all()
+        
+        routes_data = []
+        for route in active_routes:
+            checkpoints = json.loads(route.checkpoints) if route.checkpoints else []
+            routes_data.append({
+                "route_id": route.route_id,
+                "vehicle_id": route.vehicle_id,
+                "status": route.status,
+                "start_point": {"lat": route.start_lat, "lng": route.start_lng},
+                "end_point": {"lat": route.end_lat, "lng": route.end_lng},
+                "checkpoints": checkpoints,
+                "current_checkpoint": route.current_checkpoint,
+                "is_locked": route.is_locked,
+                "created_at": route.created_at.isoformat()
+            })
+        
+        return {
+            "active_routes": routes_data,
+            "count": len(routes_data),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get active routes: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve active routes")
+
+
+# =============================================================================
+# Frontend & Debug Endpoints
+# =============================================================================
+
+@app.get("/ui")
+async def serve_ui():
+    """Serve the frontend UI"""
+    try:
+        return FileResponse("demo.html")
+    except:
+        return {"message": "UI file not found. Please place demo.html in the same directory."}
+
+
+@app.get("/api/v1/debug/gps", tags=["Debug"])
+async def debug_gps_data(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Debug GPS data in database"""
+    try:
+        all_gps = db.query(DBGPSData).order_by(DBGPSData.timestamp.desc()).limit(50).all()
+        
+        gps_data = []
+        for gps in all_gps:
+            gps_data.append({
+                "id": gps.id,
+                "device_id": gps.device_id,
+                "timestamp": gps.timestamp.isoformat(),
+                "latitude": gps.latitude,
+                "longitude": gps.longitude,
+                "altitude": gps.altitude,
+                "accuracy": gps.accuracy,
+                "speed": gps.speed,
+                "heading": gps.heading
+            })
+        
+        device_counts_query = db.query(
+            DBGPSData.device_id, 
+            func.count(DBGPSData.id)
+        ).group_by(DBGPSData.device_id).all()
+        
+        device_counts = {device: count for device, count in device_counts_query}
+        
+        return {
+            "total_records": len(gps_data),
+            "records": gps_data,
+            "device_counts": device_counts,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug GPS failed: {e}")
+        return {"error": str(e)}
+
+
+@app.post("/api/v1/debug/reset-gps", tags=["Debug"])
+async def reset_gps_data(
+    current_user = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Reset and regenerate GPS data"""
+    try:
+        db.query(DBGPSData).delete()
+        db.commit()
+        
+        quantum_system.initialize_demo_devices(db)
+        
+        return {
+            "status": "success",
+            "message": "GPS data reset and regenerated",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"GPS reset failed: {e}")
+        db.rollback()
+        return {"error": str(e)}
+
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 
 def run_server():
     """Run the production server"""
-    
-    app = create_app()
-    
     logger.info("=" * 80)
     logger.info("🚀 QUANTUM CYBERSECURITY BACKEND - FULLY SYNCHRONIZED")
     logger.info("=" * 80)
@@ -1608,10 +1725,17 @@ def run_server():
         access_log=True
     )
 
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "dev":
         # Development mode with hot reload
-        app = create_app()
-        uvicorn.run(app, host="127.0.0.1", port=8000, reload=True, log_level="debug")
+        uvicorn.run(
+            "__main__:app", 
+            host="127.0.0.1", 
+            port=8000, 
+            reload=True, 
+            log_level="debug"
+        )
     else:
+        # Production mode
         run_server()
